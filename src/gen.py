@@ -58,6 +58,7 @@ if __name__ == '__main__':
   parser = argparse.ArgumentParser()
   parser.add_argument('-p', '--patchfile', help='XML patch file')
   parser.add_argument('-o', '--outputdir', default='.', help='directory into which output files are dumped')
+  parser.add_argument('--force', action='store_true', help='force creation of output directory')
   parser.add_argument('-j', '--json', action='store_true')
   parser.add_argument('-c', '--cpp', action='store_true')
   parser.add_argument('--verify', action='store_true')
@@ -75,8 +76,10 @@ if __name__ == '__main__':
   inputfile = args.regfile # os.path.join(os.path.dirname(__file__), 'gl.xml')
   outputpath = args.outputdir
   if not os.path.exists(outputpath):
-    print 'output path %s does not exist' % outputpath
-    sys.exit(1)
+    if not args.force:
+      print 'error: output path %s does not exist. Specify --force to force creation of this directory' % outputpath
+      sys.exit(1)
+    os.makedirs(outputpath)
 
   print 'parsing registry file %s' % inputfile
   xmltree       = etree.parse(inputfile)

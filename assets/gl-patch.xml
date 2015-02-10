@@ -1,0 +1,181 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<registry>
+  <comment>
+Unfortunately the Khronos OpenGL registry (gl.xml) has a number of errors and 
+in many ways is not sufficient for creating a C++ OpenGL API wrapper.
+
+This file is formatted the same way as gl.xml, and can be patched in to overwrite
+the various errors or fill in the gaps in gl.xml. 
+
+This is so that we never need to modify gl.xml directly, allowing us to replace it
+with a newer version with impunity.
+  </comment>
+
+  <groups>
+    <group name="FramebufferTarget" comment="used by glFramebufferRenderbuffer,glCheckFramebufferStatus,glBindFramebuffer,glGetFramebufferAttachmentParameteriv,glFramebufferTexture2D">
+      <enum name="GL_DRAW_FRAMEBUFFER"/>
+      <enum name="GL_READ_FRAMEBUFFER"/>
+      <enum name="GL_FRAMEBUFFER"/>
+    </group>
+    <group name="BufferUsageARB" comment="used by glBufferData">
+      <enum name="GL_ARRAY_BUFFER"/>
+      <enum name="GL_COPY_READ_BUFFER"/>
+      <enum name="GL_COPY_WRITE_BUFFER"/>
+      <enum name="GL_ELEMENT_ARRAY_BUFFER"/>
+      <enum name="GL_PIXEL_PACK_BUFFER"/>
+      <enum name="GL_PIXEL_UNPACK_BUFFER"/>
+      <enum name="GL_TEXTURE_BUFFER"/>
+      <enum name="GL_TRANSFORM_FEEDBACK_BUFFER"/>
+      <enum name="GL_UNIFORM_BUFFER"/>
+    </group>
+    <group name="BufferTargetARB" comment="used by glGetBufferParameteriv,glBindBuffer,glBufferData,glBufferSubData">
+      <enum name="GL_ARRAY_BUFFER"/>
+      <enum name="GL_ELEMENT_ARRAY_BUFFER"/>
+      <enum name="GL_ATOMIC_COUNTER_BUFFER"/>
+      <enum name="GL_COPY_READ_BUFFER"/>
+      <enum name="GL_COPY_WRITE_BUFFER"/>
+      <enum name="GL_DISPATCH_INDIRECT_BUFFER"/>
+      <enum name="GL_DRAW_INDIRECT_BUFFER"/>
+      <enum name="GL_PIXEL_PACK_BUFFER"/>
+      <enum name="GL_PIXEL_UNPACK_BUFFER"/>
+      <enum name="GL_QUERY_BUFFER"/>
+      <enum name="GL_SHADER_STORAGE_BUFFER"/>
+      <enum name="GL_TEXTURE_BUFFER"/>
+      <enum name="GL_TRANSFORM_FEEDBACK_BUFFER"/>
+      <enum name="GL_UNIFORM_BUFFER"/>
+    </group>
+    <group name="RenderbufferTarget" comment="used by glRenderbufferStorage,glFramebufferRenderbuffer,glBindRenderbuffer,glGetRenderbufferParameteriv">
+      <enum name="GL_RENDERBUFFER"/>
+    </group>
+    <group name="FramebufferAttachment" comment="used by glFramebufferRenderbuffer,glFramebufferTexture2D,glGetFramebufferAttachmentParameteriv">
+      <enum name="GL_COLOR_ATTACHMENT0"/>
+      <enum name="GL_COLOR_ATTACHMENT1"/>
+      <enum name="GL_COLOR_ATTACHMENT2"/>
+      <enum name="GL_COLOR_ATTACHMENT3"/>
+      <enum name="GL_COLOR_ATTACHMENT4"/>
+      <enum name="GL_COLOR_ATTACHMENT5"/>
+      <enum name="GL_COLOR_ATTACHMENT6"/>
+      <enum name="GL_COLOR_ATTACHMENT7"/>
+      <enum name="GL_COLOR_ATTACHMENT8"/>
+      <enum name="GL_COLOR_ATTACHMENT9"/>
+      <enum name="GL_COLOR_ATTACHMENT10"/>
+      <enum name="GL_COLOR_ATTACHMENT11"/>
+      <enum name="GL_COLOR_ATTACHMENT12"/>
+      <enum name="GL_COLOR_ATTACHMENT13"/>
+      <enum name="GL_COLOR_ATTACHMENT14"/>
+      <enum name="GL_COLOR_ATTACHMENT15"/>
+      <enum name="GL_DEPTH_ATTACHMENT"/>
+      <enum name="GL_STENCIL_ATTACHMENT"/>
+      <enum name="GL_DEPTH_STENCIL_ATTACHMENT"/>
+    </group>
+    <group name="StencilFaceDirection" comment="used by glStencilOpSeparate,glStencilMaskSeparate,glStencilFuncSeparate">
+      <enum name="GL_BACK"/>
+      <enum name="GL_FRONT"/>
+      <enum name="GL_FRONT_AND_BACK"/>
+    </group>
+    <group name="VertexAttribPropertyARB" comment="used by glGetVertexAttribiv,glGetVertexAttribfv">
+      <enum name="GL_VERTEX_ATTRIB_ARRAY_BUFFER_BINDING"/>
+      <enum name="GL_VERTEX_ATTRIB_ARRAY_ENABLED"/>
+      <enum name="GL_VERTEX_ATTRIB_ARRAY_SIZE"/>
+      <enum name="GL_VERTEX_ATTRIB_ARRAY_STRIDE"/>
+      <enum name="GL_VERTEX_ATTRIB_ARRAY_TYPE"/>
+      <enum name="GL_VERTEX_ATTRIB_ARRAY_NORMALIZED"/>
+      <enum name="GL_VERTEX_ATTRIB_ARRAY_INTEGER"/>
+      <enum name="GL_VERTEX_ATTRIB_ARRAY_DIVISOR"/>
+      <enum name="GL_CURRENT_VERTEX_ATTRIB"/>
+    </group>
+    <group name="VertexAttribPointerType" comment="used by glVertexAttribPointer">
+      <enum name="GL_BYTE"/>
+      <enum name="GL_UNSIGNED_BYTE"/>
+      <enum name="GL_SHORT"/>
+      <enum name="GL_UNSIGNED_SHORT"/>
+      <enum name="GL_FIXED"/>
+      <enum name="GL_FLOAT"/>
+      <!-- todo: additional types http://docs.gl/gl4/glVertexAttribPointer -->
+    </group>
+    <group name="VertexAttribPointerPropertyARB" comment="used by glGetVertexAttribPointerv">
+      <enum name="GL_VERTEX_ATTRIB_ARRAY_POINTER"/>
+    </group>
+    <group name="TextureComponentCount" comment="used by glTexImage2D">
+      <!-- 
+        todo: additional types above OpenGL ES 2.0: http://docs.gl/es3/glTexImage2D
+        but they would add invalid types from the OpenGL ES2.0 namespace (e.g., GL_DEPTH_COMPONENT16)
+        -->
+      <enum name="GL_ALPHA"/>
+      <enum name="GL_LUMINANCE"/>
+      <enum name="GL_LUMINANCE_ALPHA"/>
+      <enum name="GL_RGB"/>
+      <enum name="GL_RGBA"/>
+    </group>
+    <group name="TextureUnit" comment="used by glActiveTexture">
+      <enum name="GL_TEXTURE0"/>
+      <enum name="GL_TEXTURE1"/>
+      <enum name="GL_TEXTURE2"/>
+      <enum name="GL_TEXTURE3"/>
+      <enum name="GL_TEXTURE4"/>
+      <enum name="GL_TEXTURE5"/>
+      <enum name="GL_TEXTURE6"/>
+      <enum name="GL_TEXTURE7"/>
+      <enum name="GL_TEXTURE8"/>
+      <enum name="GL_TEXTURE9"/>
+      <enum name="GL_TEXTURE10"/>
+      <enum name="GL_TEXTURE11"/>
+      <enum name="GL_TEXTURE12"/>
+      <enum name="GL_TEXTURE13"/>
+      <enum name="GL_TEXTURE14"/>
+      <enum name="GL_TEXTURE15"/>
+      <enum name="GL_TEXTURE16"/>
+      <enum name="GL_TEXTURE17"/>
+      <enum name="GL_TEXTURE18"/>
+      <enum name="GL_TEXTURE19"/>
+      <enum name="GL_TEXTURE20"/>
+      <enum name="GL_TEXTURE21"/>
+      <enum name="GL_TEXTURE22"/>
+      <enum name="GL_TEXTURE23"/>
+      <enum name="GL_TEXTURE24"/>
+      <enum name="GL_TEXTURE25"/>
+      <enum name="GL_TEXTURE26"/>
+      <enum name="GL_TEXTURE27"/>
+      <enum name="GL_TEXTURE28"/>
+      <enum name="GL_TEXTURE29"/>
+      <enum name="GL_TEXTURE30"/>
+      <enum name="GL_TEXTURE31"/>
+    </group>
+    <group name="BufferPNameARB" comment="used by glGetBufferParameteriv">
+    <!-- TODO: incorporating these would result in invalid values in OpenGL ES 3.0
+      <enum name="GL_BUFFER_ACCESS"/>
+      <enum name="GL_BUFFER_MAPPED"/>
+    -->
+      <enum name="GL_BUFFER_SIZE"/>
+      <enum name="GL_BUFFER_USAGE"/>
+    </group>
+    <group name="DrawElementsType" comment="used by glDrawElements">
+    <!-- TODO: incorporating these would result in invalid values in OpenGL ES 3.0
+         unless GL_OES_element_index_uint is supported
+      <enum name="GL_UNSIGNED_INT"/>
+    -->
+      <enum name="GL_UNSIGNED_BYTE"/>
+      <enum name="GL_UNSIGNED_SHORT"/>
+    </group>
+    <group name="BlendEquationMode" comment="used by glBlendEquation">
+      <enum name="GL_FUNC_ADD"/>
+      <enum name="GL_FUNC_SUBTRACT"/>
+      <enum name="GL_FUNC_REVERSE_SUBTRACT"/>
+      <enum name="GL_MIN"/>
+      <enum name="GL_MAX"/>
+    </group>
+  </groups>
+
+  <commands>
+    <!-- TODO: incorporate patches from https://github.com/hpicgs/glbinding/blob/master/codegeneration/patch.xml ? -->
+    <command>
+      <proto><ptype>GLenum</ptype> <name>glPathGlyphIndexRangeNV</name></proto>
+      <param><ptype>GLenum</ptype> <name>fontTarget</name></param>
+      <param>const void *<name>fontName</name></param>
+      <param><ptype>GLbitfield</ptype> <name>fontStyle</name></param>
+      <param><ptype>GLuint</ptype> <name>pathParameterTemplate</name></param>
+      <param><ptype>GLfloat</ptype> <name>emScale</name></param>
+      <param><ptype>GLuint *</ptype> <name>baseAndCount</name></param>
+    </command>
+  </commands>
+</registry>
