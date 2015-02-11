@@ -83,6 +83,9 @@ COMMAND_PROTOTYPE_TEMPLATE = """\
 
 COMMAND_IMPLEMENTATION_TEMPLATE = """\
     ${RETURN_TYPE} ${NAME}(${PARAMETER_LIST}) {
+      {{''.join(['%s %s_; ' % (p.baseType, p.name) for p in params if p.isPointer and p.group])}}
+      ${MAYBE_RETURN}${STATIC_CAST_BEGIN}${GL_NAME}(${ARGUMENT_LIST})${STATIC_CAST_END};
+      {{''.join(['*%s = static_cast<%s>(%s_); ' % (p.name, param_types[p.name], p.name) for p in params if p.isPointer and p.group])}}
     }
 """
 
@@ -114,17 +117,42 @@ def compileTemplate(template, vars):
 
   return subst_var_pattern.sub(substituteVar, compiled)
 
-_CAMEL_CASE_TO_SNAKE_CASE_REGEX_ = re.compile('((?<=[a-z0-9])[A-Z]|(?!^)[A-Z](?=[a-z]))')
+#
+# name conversion utilities
+#
+
+_CAMEL_CASE_TO_SNAKE_CASE_REGEX_ = re.compile('((?<=[a-z])[A-Z0-9]|(?!^)[A-Z](?=[a-z]))')
+_TYPE_NAME_REGEX_ = re.compile('(const[ ]+)?([^ *]+)([ ]*\*)?') # (const )(typename)( *)
+
+def toTypeName(v):
+  exceptions = {'void'} # do not modify these types
+
+  prevTypename = _TYPE_NAME_REGEX_.match(v).group(2)
+  newTypename = prevTypename[2:] if prevTypename.startswith('GL') else prevTypename
+  newTypename = newTypename + '_t' if newTypename not in exceptions else newTypename
+  return v.replace(prevTypename, newTypename)
+
 def toEnumName(v):
-  return _CAMEL_CASE_TO_SNAKE_CASE_REGEX_.sub(r'_\1', v).lower()
+  return _CAMEL_CASE_TO_SNAKE_CASE_REGEX_.sub(r'_\1', v).lower() + '_t'
+
 def toFunctionName(v):
   tmp = v[2:] if v.startswith('gl') else v
   return _CAMEL_CASE_TO_SNAKE_CASE_REGEX_.sub(r'_\1', tmp).lower()
 
+def getTypeString(param):
+  newTypename = toEnumName(param.group.name) if param.group else toTypeName(param.baseType)
+
+  return param.type.replace(param.baseType, newTypename)
+
+
+#
+# serialisation procedures
+#
+
 def writeCppEnums(groups, fp):
   def compileEnum(enum):
     def toEnumValue(v):
-      reserved_words = ['return', 'true', 'false', 'byte', 'long', 'int', 'short', 'char', 'float', 'double', 'unsigned_byte', 'unsigned_short', 'unsigned_int']
+      reserved_words = ['return', 'bool', 'true', 'false', 'byte', 'long', 'int', 'short', 'char', 'float', 'double', 'unsigned_byte', 'unsigned_short', 'unsigned_int']
       val = v[3:] if v.startswith('GL_') else v
       val = val.lower()
       val = val + '_' if val in reserved_words else val
@@ -149,9 +177,10 @@ def writeCppEnums(groups, fp):
 
   fp.write(compileTemplate(HEADER_TEMPLATE, vars))
 
+
 def writeCppCommandsHeader(commands, fp):
   def compileParameter(param):
-    typename = param.type if not param.group else toEnumName(param.group.name)
+    typename = getTypeString(param)
     vars = {'type': typename, 'name': param.name}
     return compileTemplate(COMMAND_PARAMETER_TEMPLATE, vars)
 
@@ -160,6 +189,7 @@ def writeCppCommandsHeader(commands, fp):
     vars = command.toDictionary()
     vars['name'] = toFunctionName(vars['name'])
     vars['parameter_list'] = parameters
+    vars['return_type'] = toTypeName(command.returntype) if not command.returngroup else toEnumName(command.returngroup.name)
     return compileTemplate(COMMAND_PROTOTYPE_TEMPLATE, vars)
 
   content = '\n'.join([compileCommand(c) for c in commands])
@@ -174,18 +204,36 @@ def writeCppCommandsHeader(commands, fp):
 
 def writeCppCommandsCpp(commands, fp):
   def compileParameter(param):
-    typename = param.type if not param.group else param.group.name
+    typename = getTypeString(param)
     vars = {'type': typename, 'name': param.name}
     return compileTemplate(COMMAND_PARAMETER_TEMPLATE, vars)
+  def compileArgument(param):
+    paramName = '&%s_' % param.name if param.isPointer and param.group else param.name
+    shouldCast = param.group and not param.isPointer
+    return paramName if not shouldCast else 'static_cast<%s>(%s)' % (param.type, paramName)
 
   def compileCommand(command):
     parameters = ', '.join([compileParameter(p) for p in command.parameters])
+    arguments = ', '.join([compileArgument(p) for p in command.parameters])
     vars = command.toDictionary()
+    vars['gl_name'] = vars['name']
+    vars['name'] = toFunctionName(vars['name'])
     vars['parameter_list'] = parameters
+    vars['argument_list'] = arguments
+    vars['return_type'] = toTypeName(command.returntype) if not command.returngroup else toEnumName(command.returngroup.name)
+    vars['maybe_return'] = 'return ' if vars['return_type'] != 'void' else ''
+    vars['static_cast_begin'] = 'static_cast<%s>(' % vars['return_type'] if command.returngroup else ''
+    vars['static_cast_end'] = ')' if command.returngroup else ''
+    vars['params'] = command.parameters
+    vars['param_types'] = {p.name: toTypeName(p.baseType) for p in command.parameters}
     return compileTemplate(COMMAND_IMPLEMENTATION_TEMPLATE, vars)
 
   content = '\n'.join([compileCommand(c) for c in commands])
 
-  vars = {'content': content, 'LOCAL_HEADERS': ['commands.h']}
+  vars = {
+    'content': content,
+    'LOCAL_HEADERS': ['commands.h'],
+    'SYSTEM_HEADERS': ['GLES2/gl2.h']
+  }
 
   fp.write(compileTemplate(CPP_TEMPLATE, vars))

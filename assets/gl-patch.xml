@@ -164,6 +164,213 @@ with a newer version with impunity.
       <enum name="GL_MIN"/>
       <enum name="GL_MAX"/>
     </group>
+    <group name="BlendEquationModeEXT" comment="used by glBlendEquationEXT, glBlendEquationSeparate, glBlendEquationSeparateEXT">
+      <enum name="GL_FUNC_ADD"/>
+      <enum name="GL_FUNC_SUBTRACT"/>
+      <enum name="GL_FUNC_REVERSE_SUBTRACT"/>
+      <enum name="GL_MIN"/>
+      <enum name="GL_MAX"/>
+    </group>
+
+    <group name="BlendFuncSeparateParameterEXT" comment="used by glBlendFuncSeparate">
+      <enum name="GL_ZERO"/>
+      <enum name="GL_ONE"/>
+      <enum name="GL_SRC_COLOR"/>
+      <enum name="GL_ONE_MINUS_SRC_COLOR"/>
+      <enum name="GL_DST_COLOR"/>
+      <enum name="GL_ONE_MINUS_DST_COLOR"/>
+      <enum name="GL_SRC_ALPHA"/>
+      <enum name="GL_ONE_MINUS_SRC_ALPHA"/>
+      <enum name="GL_DST_ALPHA"/>
+      <enum name="GL_ONE_MINUS_DST_ALPHA"/>
+      <enum name="GL_CONSTANT_COLOR"/>
+      <enum name="GL_ONE_MINUS_CONSTANT_COLOR"/>
+      <enum name="GL_CONSTANT_ALPHA"/>
+      <enum name="GL_ONE_MINUS_CONSTANT_ALPHA"/>
+      <!-- note: this is not valid for glBlendFuncSeparate 'sfactorRGB' or 'sfactorAlpha'-->
+      <enum name="GL_SRC_ALPHA_SATURATE"/>
+    </group>
+    <group name="ShaderType" comment="used by glCreateShader">
+      <enum name="GL_COMPUTE_SHADER"/>
+      <enum name="GL_VERTEX_SHADER"/>
+      <enum name="GL_TESS_CONTROL_SHADER"/>
+      <enum name="GL_TESS_EVALUATION_SHADER"/>
+      <enum name="GL_GEOMETRY_SHADER"/>
+      <enum name="GL_FRAGMENT_SHADER"/>
+    </group>
+    <group name="PrecisionType" comment="used by glGetShaderPrecisionFormat">
+      <enum name="GL_LOW_FLOAT"/>
+      <enum name="GL_MEDIUM_FLOAT"/>
+      <enum name="GL_HIGH_FLOAT"/>
+      <enum name="GL_LOW_INT"/>
+      <enum name="GL_MEDIUM_INT"/>
+      <enum name="GL_HIGH_INT"/>
+    </group>
+    <group name="MipmapTarget" comment="used by glGenerateMipmap">
+      <enum name="GL_TEXTURE_1D"/>
+      <enum name="GL_TEXTURE_2D"/>
+      <enum name="GL_TEXTURE_3D"/>
+      <enum name="GL_TEXTURE_1D_ARRAY"/>
+      <enum name="GL_TEXTURE_2D_ARRAY"/>
+      <enum name="GL_TEXTURE_CUBE_MAP"/>
+      <enum name="GL_TEXTURE_CUBE_MAP_ARRAY"/>
+    </group>
+
+    <group name="InternalFormat" comment="used by glRenderbufferStorage">
+      <enum name="GL_R8"/>
+      <enum name="GL_R8UI"/>
+      <enum name="GL_R8I"/>
+      <enum name="GL_R16UI"/>
+      <enum name="GL_R16I"/>
+      <enum name="GL_R32UI"/>
+      <enum name="GL_R32I"/>
+      <enum name="GL_RG8"/>
+      <enum name="GL_RG8UI"/>  
+      <enum name="GL_RG8I"/>
+      <enum name="GL_RG16UI"/>   
+      <enum name="GL_RG16I"/>
+      <enum name="GL_RG32UI"/>   
+      <enum name="GL_RG32I"/>  
+      <enum name="GL_RGB8"/>
+      <enum name="GL_RGB565"/>
+      <enum name="GL_RGBA8"/>
+      <enum name="GL_SRGB8_ALPHA8"/>
+      <enum name="GL_RGB5_A1"/>
+      <enum name="GL_RGBA4"/>
+      <enum name="GL_RGB10_A2"/>
+      <enum name="GL_RGBA8UI"/>
+      <enum name="GL_RGBA8I"/>
+      <enum name="GL_RGB10_A2UI"/>
+      <enum name="GL_RGBA16UI"/>
+      <enum name="GL_RGBA16I"/>
+      <enum name="GL_RGBA32I"/>
+      <enum name="GL_RGBA32UI"/>
+      <enum name="GL_DEPTH_COMPONENT16"/>
+      <enum name="GL_DEPTH_COMPONENT24"/>
+      <enum name="GL_DEPTH_COMPONENT32F"/>
+      <enum name="GL_DEPTH24_STENCIL8"/>
+      <enum name="GL_DEPTH32F_STENCIL8"/>
+      <enum name="GL_STENCIL_INDEX8"/>
+    </group>
+    <!-- TODO: apply this to glGetActiveUniform once we can allow for pointers to enums -->
+    <group name="UniformType" comment="used by glGetActiveUniform">
+      <enum name="GL_FLOAT"/>
+      <enum name="GL_FLOAT_VEC2"/>
+      <enum name="GL_FLOAT_VEC3"/>
+      <enum name="GL_FLOAT_VEC4"/>
+      <enum name="GL_DOUBLE"/>
+      <enum name="GL_DOUBLE_VEC2"/>
+      <enum name="GL_DOUBLE_VEC3"/>
+      <enum name="GL_DOUBLE_VEC4"/>
+      <enum name="GL_INT"/>
+      <enum name="GL_INT_VEC2"/>
+      <enum name="GL_INT_VEC3"/>
+      <enum name="GL_INT_VEC4"/>
+      <enum name="GL_UNSIGNED_INT"/>
+      <enum name="GL_UNSIGNED_INT_VEC2"/>
+      <enum name="GL_UNSIGNED_INT_VEC3"/>
+      <enum name="GL_UNSIGNED_INT_VEC4"/>
+      <enum name="GL_BOOL"/>
+      <enum name="GL_BOOL_VEC2"/>
+      <enum name="GL_BOOL_VEC3"/>
+      <enum name="GL_BOOL_VEC4"/>
+      <enum name="GL_FLOAT_MAT2"/>
+      <enum name="GL_FLOAT_MAT3"/>
+      <enum name="GL_FLOAT_MAT4"/>
+      <enum name="GL_FLOAT_MAT2x3"/>
+      <enum name="GL_FLOAT_MAT2x4"/>
+      <enum name="GL_FLOAT_MAT3x2"/>
+      <enum name="GL_FLOAT_MAT3x4"/>
+      <enum name="GL_FLOAT_MAT4x2"/>
+      <enum name="GL_FLOAT_MAT4x3"/>
+      <enum name="GL_DOUBLE_MAT2"/>
+      <enum name="GL_DOUBLE_MAT3"/>
+      <enum name="GL_DOUBLE_MAT4"/>
+      <enum name="GL_DOUBLE_MAT2x3"/>
+      <enum name="GL_DOUBLE_MAT2x4"/>
+      <enum name="GL_DOUBLE_MAT3x2"/>
+      <enum name="GL_DOUBLE_MAT3x4"/>
+      <enum name="GL_DOUBLE_MAT4x2"/>
+      <enum name="GL_DOUBLE_MAT4x3"/>
+      <enum name="GL_SAMPLER_1D"/>
+      <enum name="GL_SAMPLER_2D"/>
+      <enum name="GL_SAMPLER_3D"/>
+      <enum name="GL_SAMPLER_CUBE"/>
+      <enum name="GL_SAMPLER_1D_SHADOW"/>
+      <enum name="GL_SAMPLER_2D_SHADOW"/>
+      <enum name="GL_SAMPLER_1D_ARRAY"/>
+      <enum name="GL_SAMPLER_2D_ARRAY"/>
+      <enum name="GL_SAMPLER_1D_ARRAY_SHADOW"/>
+      <enum name="GL_SAMPLER_2D_ARRAY_SHADOW"/>
+      <enum name="GL_SAMPLER_2D_MULTISAMPLE"/>
+      <enum name="GL_SAMPLER_2D_MULTISAMPLE_ARRAY"/>
+      <enum name="GL_SAMPLER_CUBE_SHADOW"/>
+      <enum name="GL_SAMPLER_BUFFER"/>
+      <enum name="GL_SAMPLER_2D_RECT"/>
+      <enum name="GL_SAMPLER_2D_RECT_SHADOW"/>
+      <enum name="GL_INT_SAMPLER_1D"/>
+      <enum name="GL_INT_SAMPLER_2D"/>
+      <enum name="GL_INT_SAMPLER_3D"/>
+      <enum name="GL_INT_SAMPLER_CUBE"/>
+      <enum name="GL_INT_SAMPLER_1D_ARRAY"/>
+      <enum name="GL_INT_SAMPLER_2D_ARRAY"/>
+      <enum name="GL_INT_SAMPLER_2D_MULTISAMPLE"/>
+      <enum name="GL_INT_SAMPLER_2D_MULTISAMPLE_ARRAY"/>
+      <enum name="GL_INT_SAMPLER_BUFFER"/>
+      <enum name="GL_INT_SAMPLER_2D_RECT"/>
+      <enum name="GL_UNSIGNED_INT_SAMPLER_1D"/>
+      <enum name="GL_UNSIGNED_INT_SAMPLER_2D"/>
+      <enum name="GL_UNSIGNED_INT_SAMPLER_3D"/>
+      <enum name="GL_UNSIGNED_INT_SAMPLER_CUBE"/>
+      <enum name="GL_UNSIGNED_INT_SAMPLER_1D_ARRAY"/>
+      <enum name="GL_UNSIGNED_INT_SAMPLER_2D_ARRAY"/>
+      <enum name="GL_UNSIGNED_INT_SAMPLER_2D_MULTISAMPLE"/>
+      <enum name="GL_UNSIGNED_INT_SAMPLER_2D_MULTISAMPLE_ARRAY"/>
+      <enum name="GL_UNSIGNED_INT_SAMPLER_BUFFER"/>
+      <enum name="GL_UNSIGNED_INT_SAMPLER_2D_RECT"/>
+      <enum name="GL_IMAGE_1D"/>
+      <enum name="GL_IMAGE_2D"/>
+      <enum name="GL_IMAGE_3D"/>
+      <enum name="GL_IMAGE_2D_RECT"/>
+      <enum name="GL_IMAGE_CUBE"/>
+      <enum name="GL_IMAGE_BUFFER"/>
+      <enum name="GL_IMAGE_1D_ARRAY"/>
+      <enum name="GL_IMAGE_2D_ARRAY"/>
+      <enum name="GL_IMAGE_2D_MULTISAMPLE"/>
+      <enum name="GL_IMAGE_2D_MULTISAMPLE_ARRAY"/>
+      <enum name="GL_INT_IMAGE_1D"/>
+      <enum name="GL_INT_IMAGE_2D"/>
+      <enum name="GL_INT_IMAGE_3D"/>
+      <enum name="GL_INT_IMAGE_2D_RECT"/>
+      <enum name="GL_INT_IMAGE_CUBE"/>
+      <enum name="GL_INT_IMAGE_BUFFER"/>
+      <enum name="GL_INT_IMAGE_1D_ARRAY"/>
+      <enum name="GL_INT_IMAGE_2D_ARRAY"/>
+      <enum name="GL_INT_IMAGE_2D_MULTISAMPLE"/>
+      <enum name="GL_INT_IMAGE_2D_MULTISAMPLE_ARRAY"/>
+      <enum name="GL_UNSIGNED_INT_IMAGE_1D"/>
+      <enum name="GL_UNSIGNED_INT_IMAGE_2D"/>
+      <enum name="GL_UNSIGNED_INT_IMAGE_3D"/>
+      <enum name="GL_UNSIGNED_INT_IMAGE_2D_RECT"/>
+      <enum name="GL_UNSIGNED_INT_IMAGE_CUBE"/>
+      <enum name="GL_UNSIGNED_INT_IMAGE_BUFFER"/>
+      <enum name="GL_UNSIGNED_INT_IMAGE_1D_ARRAY"/>
+      <enum name="GL_UNSIGNED_INT_IMAGE_2D_ARRAY"/>
+      <enum name="GL_UNSIGNED_INT_IMAGE_2D_MULTISAMPLE"/>
+      <enum name="GL_UNSIGNED_INT_IMAGE_2D_MULTISAMPLE_ARRAY"/>
+      <enum name="GL_UNSIGNED_INT_ATOMIC_COUNTER"/>
+    </group>
+    <group name="FramebufferStatus" comment="used by glCheckFramebufferStatus">
+      <enum name="GL_FRAMEBUFFER_COMPLETE"/>
+      <enum name="GL_FRAMEBUFFER_UNDEFINED"/>
+      <enum name="GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT"/>
+      <enum name="GL_FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT"/>
+      <enum name="GL_FRAMEBUFFER_INCOMPLETE_DRAW_BUFFER"/>
+      <enum name="GL_FRAMEBUFFER_UNSUPPORTED"/>
+      <enum name="GL_FRAMEBUFFER_INCOMPLETE_MULTISAMPLE"/>
+      <enum name="GL_FRAMEBUFFER_INCOMPLETE_LAYER_TARGETS"/>
+    </group>
+
   </groups>
 
   <commands>
@@ -177,5 +384,35 @@ with a newer version with impunity.
       <param><ptype>GLfloat</ptype> <name>emScale</name></param>
       <param><ptype>GLuint *</ptype> <name>baseAndCount</name></param>
     </command>
+    <command> <!-- added paramter group -->
+      <proto><ptype>GLuint</ptype> <name>glCreateShader</name></proto>
+      <param group="ShaderType"><ptype>GLenum</ptype> <name>type</name></param>
+    </command>
+    <command>
+      <proto>void <name>glGetShaderPrecisionFormat</name></proto>
+      <param group="ShaderType"><ptype>GLenum</ptype> <name>shadertype</name></param>
+      <param group="PrecisionType"><ptype>GLenum</ptype> <name>precisiontype</name></param>
+      <param len="2"><ptype>GLint</ptype> *<name>range</name></param>
+      <param len="2"><ptype>GLint</ptype> *<name>precision</name></param>
+    </command>
+    <command> <!-- added paramter group -->
+      <proto>void <name>glGenerateMipmap</name></proto>
+      <param group="MipmapTarget"><ptype>GLenum</ptype> <name>target</name></param>
+      <glx type="render" opcode="4325"/>
+    </command>
+    <command>
+      <proto>void <name>glRenderbufferStorage</name></proto>
+      <param group="RenderbufferTarget"><ptype>GLenum</ptype> <name>target</name></param>
+      <param group="InternalFormat"><ptype>GLenum</ptype> <name>internalformat</name></param>
+      <param><ptype>GLsizei</ptype> <name>width</name></param>
+      <param><ptype>GLsizei</ptype> <name>height</name></param>
+      <glx type="render" opcode="4318"/>
+    </command>
+    <command>
+      <proto group="FramebufferStatus"><ptype>GLenum</ptype> <name>glCheckFramebufferStatus</name></proto>
+      <param group="FramebufferTarget"><ptype>GLenum</ptype> <name>target</name></param>
+      <glx type="vendor" opcode="1427"/>
+    </command>
+
   </commands>
 </registry>

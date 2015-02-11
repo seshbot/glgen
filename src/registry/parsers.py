@@ -136,7 +136,7 @@ class ParameterXml:
 
   def __str__(self):
     if self.groupString != None:
-      return "%s %s" % (self.groupString, self.name)
+      return "%s %s %s" % (self.groupString, self.type, self.name)
     else:
       return "%s %s" % (self.type, self.name)
 
@@ -156,6 +156,8 @@ class CommandXml:
 
     self.name       = proto.find("name").text
     self.returntype = " ".join([t.strip() for t in proto.itertext()][:-1]).strip()
+
+    self.returnGroupString = proto.attrib.get("group", None)
 
     self.params = []
 

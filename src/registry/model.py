@@ -1,3 +1,5 @@
+import re
+
 class Feature:
   def __init__(self, data, id):
     self.id = id
@@ -78,13 +80,15 @@ class Group:
 
     return data
 
-
+_TYPE_NAME_REGEX_ = re.compile('(const[ ]+)?([^ *]+)([ ]*\*)?') # (const )(typename)( *)
 class Parameter:
   def __init__(self, data, id):
     self.id = id
     self.name = data.name
     self.group = None
     self.type = data.type
+    self.baseType = _TYPE_NAME_REGEX_.match(self.type).group(2)
+    self.isPointer = '*' in self.type
     self.data = data
     self.hash = data.hash
     self.commands = set()
@@ -108,9 +112,12 @@ class Command:
     self.name = data.name
     self.data = data
 
+    self.returngroup = None
     self.returntype = self.data.returntype
+    self.baseReturnType =  _TYPE_NAME_REGEX_.match(self.returntype).group(2)
+
     self.features = set()
-    self.parameters = set()
+    self.parameters = []
 
     self.parameterHashes = [p.hash for p in data.params]
 
@@ -122,6 +129,8 @@ class Command:
     data['features'] = map(lambda f: f.id, self.features)
     data['parameters'] = map(lambda p: p.id, self.parameters)
     data['return_type'] = self.returntype
+    if self.returngroup:
+      data['return_group'] = self.returngroup
 
     return data
 
@@ -230,9 +239,12 @@ class Registry:
     print(' - updating command references...')
     for c in self.commands:
       c.features = {f for f in self.features if c in f.requiredCommands}
-      c.parameters = set(map(lambda h: self.parametersByHash[h], c.parameterHashes))
+      c.parameters = map(lambda h: self.parametersByHash[h], c.parameterHashes)
       for p in c.parameters:
         p.commands.add(c)
+      groupstr = c.data.returnGroupString
+      if groupstr and groupstr in self.groupsByName:
+        c.returngroup = self.groupsByName[groupstr]        
 
     print(' - updating parameter references...')
     for p in self.parameters:

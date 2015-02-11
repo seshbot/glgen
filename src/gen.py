@@ -39,6 +39,7 @@ import xml.etree.cElementTree as etree
 #  if so, create an 'aliases' collection and remove them from commands
 
 # TODO: incorporate <groups ... type="bitmask> (verify it matches <param type=GLbitfield)
+# TODO: resolve command return value enums (currently resolving to GLenum)
 
 def writeEntitiesToExistingFile(entities, varname, fp):
   fp.write('{ "%s": ' % varname)
