@@ -52,7 +52,7 @@ namespace gl {
       using value_type = typename std::underlying_type<FieldsT>::type;
       value_type value;
 
-      explicit bitmask(FieldsT f1) : value(static_cast<value_type>(f1)) {}
+      bitmask(FieldsT f1) : value(static_cast<value_type>(f1)) {}
       bitmask(FieldsT f1, FieldsT f2) : value(static_cast<value_type>(f1) | static_cast<value_type>(f2)) {}
       bitmask(FieldsT f1, FieldsT f2, FieldsT f3) : value(static_cast<value_type>(f1) | static_cast<value_type>(f2) | static_cast<value_type>(f3)) {}
       bitmask(FieldsT f1, FieldsT f2, FieldsT f3, FieldsT f4) : value(static_cast<value_type>(f1) | static_cast<value_type>(f2) | static_cast<value_type>(f3) | static_cast<value_type>(f4)) {}
@@ -77,10 +77,10 @@ namespace gl {
    // VC compiler cannot find these if they are declared as nested friend functions unfortunately
    #define CREATE_ENUM_BITMASK_TYPE(type_name, e) \
       using type_name = bitmask<e>; \
-      bitmask<e> operator|(e f1, e f2) { return{ f1, f2 }; } \
-      bitmask<e> operator&(e f1, e f2) { return bitmask<e>::and(f1, f2); } \
-      bitmask<e> operator^(e f1, e f2) { return bitmask<e>::xor(f1, f2); } \
-      bitmask<e> operator~(e f1) { return bitmask<e>::not(f1); } 
+      inline bitmask<e> operator|(e f1, e f2) { return{ f1, f2 }; } \
+      inline bitmask<e> operator&(e f1, e f2) { return bitmask<e>::and(f1, f2); } \
+      inline bitmask<e> operator^(e f1, e f2) { return bitmask<e>::xor(f1, f2); } \
+      inline bitmask<e> operator~(e f1) { return bitmask<e>::not(f1); } 
 }
 
 #endif // #ifndef TYPES__H

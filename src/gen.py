@@ -135,7 +135,6 @@ if __name__ == '__main__':
 
   registry = Registry(features, extensions, enums, groups, commands, args.es2only)
 
-
   angleExtensions = set([
     'GL_OES_element_index_uint',
     'GL_OES_get_program_binary',

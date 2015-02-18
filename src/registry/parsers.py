@@ -131,7 +131,7 @@ class EnumXml:
     if name in [ "GL_TRUE", "GL_FALSE" ]:
       return "GLboolean"
 
-    return { "u" : "GLuint", "ull" : "GLuint64"    }.get(t, "GLenum")
+    return { "u" : "GLuint", "ull" : "GLuint64" }.get(t, "GLenum")
 
 
 class GroupXml:    

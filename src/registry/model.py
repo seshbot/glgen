@@ -386,6 +386,21 @@ class Registry:
       fixExtCommand('KHR')
       fixExtCommand('APPLE')
 
+    print(' - fixing group features and extensions based on commands and params...')
+    def ensureGroupHasFeatures(group, features):
+      if not group:
+        return
+      prevFeatureCount = len(group.features)
+      group.features |= features
+      for e in group.enums:
+        e.features |= features
+      return len(group.features) > prevFeatureCount
+
+    for c in self.commands:
+      for p in c.parameters:
+        if ensureGroupHasFeatures(p.group, c.features):
+          print('   - %s:%s group %s updated' % (c.name, p.name, p.group.name))
+
     print(' - filtering non-core entities...')
     # filter out all entities that are not associated with any feature
     # (i.e, extension only commands and enums)

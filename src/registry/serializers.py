@@ -258,7 +258,11 @@ def writeCppCommandsCpp(commands, fp, headers, sysHeaders):
   def compileArgument(param):
     paramName = '&%s_' % param.name if param.isPointer and param.group else param.name
     shouldCast = param.group and not param.isPointer
-    return paramName if not shouldCast else 'static_cast<%s>(%s)' % (param.type, paramName)
+    if shouldCast:
+      if param.type == 'GLbitfield':
+        paramName = paramName + '.value' 
+      return 'static_cast<%s>(%s)' % (param.type, paramName)
+    return paramName
 
   def compileCommand(command):
     parameters = ', '.join([compileParameter(p) for p in command.parameters])
@@ -329,7 +333,11 @@ def writeCppExtCommandsCpp(commands, fp, headers, sysHeaders):
   def compileArgument(param):
     paramName = '&%s_' % param.name if param.isPointer and param.group else param.name
     shouldCast = param.group and not param.isPointer
-    return paramName if not shouldCast else 'static_cast<%s>(%s)' % (param.type, paramName)
+    if shouldCast:
+      if param.type == 'GLbitfield':
+        paramName = paramName + '.value' 
+      return 'static_cast<%s>(%s)' % (param.type, paramName)
+    return paramName
 
   def compileCommand(command):
     parameters = ', '.join([compileParameter(p) for p in command.parameters])
