@@ -27,7 +27,5 @@ See the <code>gencpp.bat</code> and <code>genjs.bat</code> for examples of usage
       --es2only
 
 ### TODO
- - does not currently parse or incorporate extensions
- - related to the above, doesnt process 'alias' commands (generally provided by extensions)
- - generated C++ code does not generate types.h file or allow for bitmasks
+ - doesnt process 'alias' commands (generally provided by extensions)
  - source command description and usage text from somewhere?
