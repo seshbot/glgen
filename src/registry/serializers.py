@@ -162,12 +162,15 @@ def toTypeName(v):
   newTypename = newTypename + '_t' if newTypename not in exceptions else newTypename
   return v.replace(prevTypename, newTypename)
 
-def toEnumName(v):
-  return _CAMEL_CASE_TO_SNAKE_CASE_REGEX_.sub(r'_\1', v).lower() + '_t'
+def getGroupEnumName(group):
+  enumname = _CAMEL_CASE_TO_SNAKE_CASE_REGEX_.sub(r'_\1', group.name).lower() + '_t'
+  if group.isBitmask:
+    return re.sub('(_mask)?_t$', '_flags_t', enumname)
+  return enumname
 
-def toEnumMasktypeName(v):
-  enumname = toEnumName(v)
-  return re.sub('(mask)?_t', 'masktype_t', enumname)
+def getGroupMasktypeName(group):
+  enumname = _CAMEL_CASE_TO_SNAKE_CASE_REGEX_.sub(r'_\1', group.name).lower() + '_t'
+  return re.sub('(_mask)?_t$', '_mask_t', enumname)
 
 def toFunctionName(v):
   tmp = v[2:] if v.startswith('gl') else v
@@ -176,7 +179,7 @@ def toFunctionName(v):
 def getTypeString(param):
   def typeNameToUse():
     if param.group:
-      enumName = toEnumName(param.group.name)
+      enumName = getGroupEnumName(param.group)
       if param.type == 'GLbitfield':
         return 'bitmask<%s>' % enumName
       return enumName
@@ -208,8 +211,8 @@ def writeCppEnums(groups, fp, headerGuard):
     vars = group.toDictionary()
     glname = vars['name']
     vars['content'] = content
-    vars['name'] = toEnumName(vars['name'])
-    vars['masktype_name'] = toEnumMasktypeName(glname)
+    vars['name'] = getGroupEnumName(group)
+    vars['masktype_name'] = getGroupMasktypeName(group)
     template = BITMASK_ENUM_CLASS_TEMPLATE if group.isBitmask else ENUM_CLASS_TEMPLATE
     return compileTemplate(template, vars)
 
@@ -234,7 +237,7 @@ def writeCppCommandsHeader(commands, fp, headers, headerGuard):
     vars = command.toDictionary()
     vars['name'] = toFunctionName(vars['name'])
     vars['parameter_list'] = parameters
-    vars['return_type'] = toTypeName(command.returntype) if not command.returngroup else toEnumName(command.returngroup.name)
+    vars['return_type'] = toTypeName(command.returntype) if not command.returngroup else getGroupEnumName(command.returngroup)
     return compileTemplate(COMMAND_PROTOTYPE_TEMPLATE, vars)
 
   content = '\n'.join([compileCommand(c) for c in commands])
@@ -265,7 +268,7 @@ def writeCppCommandsCpp(commands, fp, headers, sysHeaders):
     vars['name'] = toFunctionName(vars['name'])
     vars['parameter_list'] = parameters
     vars['argument_list'] = arguments
-    vars['return_type'] = toTypeName(command.returntype) if not command.returngroup else toEnumName(command.returngroup.name)
+    vars['return_type'] = toTypeName(command.returntype) if not command.returngroup else getGroupEnumName(command.returngroup)
     vars['maybe_return'] = 'return ' if vars['return_type'] != 'void' else ''
     vars['static_cast_begin'] = 'static_cast<%s>(' % vars['return_type'] if command.returngroup else ''
     vars['static_cast_end'] = ')' if command.returngroup else ''
@@ -295,7 +298,7 @@ def writeCppExtCommandsHeader(commands, fp, headers, headerGuard):
     vars['REQUIRED_EXTENSIONS'] = command.extensions
     vars['name'] = toFunctionName(vars['name'])
     vars['parameter_list'] = parameters
-    vars['return_type'] = toTypeName(command.returntype) if not command.returngroup else toEnumName(command.returngroup.name)
+    vars['return_type'] = toTypeName(command.returntype) if not command.returngroup else getGroupEnumName(command.returngroup)
     return compileTemplate(EXT_COMMAND_PROTOTYPE_TEMPLATE, vars)
 
   commandsByExtensions = {}
@@ -337,7 +340,7 @@ def writeCppExtCommandsCpp(commands, fp, headers, sysHeaders):
     vars['name'] = toFunctionName(vars['name'])
     vars['parameter_list'] = parameters
     vars['argument_list'] = arguments
-    vars['return_type'] = toTypeName(command.returntype) if not command.returngroup else toEnumName(command.returngroup.name)
+    vars['return_type'] = toTypeName(command.returntype) if not command.returngroup else getGroupEnumName(command.returngroup)
     vars['maybe_return'] = 'return ' if vars['return_type'] != 'void' else ''
     vars['static_cast_begin'] = 'static_cast<%s>(' % vars['return_type'] if command.returngroup else ''
     vars['static_cast_end'] = ')' if command.returngroup else ''
