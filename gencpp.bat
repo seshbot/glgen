@@ -2,6 +2,7 @@
 
 if not exist build\* mkdir build
 if not exist build\lib\* mkdir build\lib
+if not exist build\lib\include\* mkdir build\lib\include
 if not exist build\lib\src\* mkdir build\lib\src
 if not exist build\lib\src\gles2\* mkdir build\lib\src\gles2
 

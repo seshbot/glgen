@@ -11,6 +11,12 @@
 
 #if ANGLE_BUILD
 
+
+// some ANGLE extensions dont appear to conform to the spec
+// e.g., GL_KHR_debug - spec says in GLES2 all commands must end in _KHR but ANGLEs' do not
+// e.g., GL_EXT_separate_shader_objects - ANGLE does not provide all the required commands (e.g., glProgramUniformMatrix4x2fvEXT)
+
+
 #ifdef GL_NV_non_square_matrices
 #undef GL_NV_non_square_matrices
 #endif

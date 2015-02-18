@@ -75,8 +75,8 @@ namespace gl {
    };
 
    // VC compiler cannot find these if they are declared as nested friend functions unfortunately
-   #define CREATE_ENUM_BITMASK(e) \
-      using e ## _bitmask = bitmask<e>; \
+   #define CREATE_ENUM_BITMASK_TYPE(type_name, e) \
+      using type_name = bitmask<e>; \
       bitmask<e> operator|(e f1, e f2) { return{ f1, f2 }; } \
       bitmask<e> operator&(e f1, e f2) { return bitmask<e>::and(f1, f2); } \
       bitmask<e> operator^(e f1, e f2) { return bitmask<e>::xor(f1, f2); } \

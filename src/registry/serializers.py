@@ -65,18 +65,6 @@ CPP_TEMPLATE = """\
 {{'\\n'.join(['#include <%s>' % h for h in SYSTEM_HEADERS]) if 'SYSTEM_HEADERS' in locals() else ''}}
 {{'\\n'.join(['#include "%s"' % h for h in LOCAL_HEADERS]) if 'LOCAL_HEADERS' in locals() else ''}}
 
-// some ANGLE extensions dont appear to conform to the spec
-#ifdef ANGLE_BUILD
-// spec says in GLES2 all commands must end in _KHR but ANGLEs' do not
-#ifdef GL_KHR_debug
-#undef GL_KHR_debug
-#endif
-// ANGLE does not provide all the required commands (e.g., glProgramUniformMatrix4x2fvEXT)
-#ifdef GL_EXT_separate_shader_objects
-#undef GL_EXT_separate_shader_objects
-#endif
-#endif
-
 namespace gl {
 ${CONTENT}
 }
@@ -86,6 +74,13 @@ ENUM_CLASS_TEMPLATE = """\
   enum class ${NAME} : unsigned int {
 ${CONTENT}  };
 """
+
+BITMASK_ENUM_CLASS_TEMPLATE = """\
+  enum class ${NAME} : unsigned int {
+${CONTENT}  };
+  CREATE_ENUM_BITMASK_TYPE(${MASKTYPE_NAME}, ${NAME})
+"""
+
 
 ENUM_VALUE_TEMPLATE = """\
     ${NAME} = ${VALUE},
@@ -170,6 +165,10 @@ def toTypeName(v):
 def toEnumName(v):
   return _CAMEL_CASE_TO_SNAKE_CASE_REGEX_.sub(r'_\1', v).lower() + '_t'
 
+def toEnumMasktypeName(v):
+  enumname = toEnumName(v)
+  return re.sub('(mask)?_t', 'masktype_t', enumname)
+
 def toFunctionName(v):
   tmp = v[2:] if v.startswith('gl') else v
   return _CAMEL_CASE_TO_SNAKE_CASE_REGEX_.sub(r'_\1', tmp).lower()
@@ -207,9 +206,12 @@ def writeCppEnums(groups, fp, headerGuard):
   def compileGroup(group):
     content = ''.join([compileEnum(e) for e in sorted(group.enums, key=lambda e: e.value)])
     vars = group.toDictionary()
+    glname = vars['name']
     vars['content'] = content
     vars['name'] = toEnumName(vars['name'])
-    return compileTemplate(ENUM_CLASS_TEMPLATE, vars)
+    vars['masktype_name'] = toEnumMasktypeName(glname)
+    template = BITMASK_ENUM_CLASS_TEMPLATE if group.isBitmask else ENUM_CLASS_TEMPLATE
+    return compileTemplate(template, vars)
 
   content = '\n'.join([compileGroup(g) for g in groups])
 

@@ -1,0 +1,9 @@
+#!/bin/bash
+
+mkdir -p build/lib/include
+mkdir -p build/lib/src/gles2
+
+cp assets/cpp/include/* build/lib/include/
+cp assets/cpp/src/* build/lib/src/gles2/
+
+python src/gen.py assets/gl.xml -p assets/gl-patch.xml -o build/lib/ --force --cpp --es2only
