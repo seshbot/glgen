@@ -2,6 +2,52 @@
 # XML info
 #
 
+class ExtensionXml:
+  def __init__(self, xml):
+    # <extension name="GL_3DFX_tbuffer" supported="gl">
+    #     <require>
+    #         <command name="glTbufferMask3DFX"/>
+    #     </require>
+    # </extension>
+    self.name   = xml.attrib["name"]
+    self.supported = set(xml.attrib["supported"].split('|'))
+
+    self.requireComments   = []
+
+    self.reqEnumStrings    = []
+    self.reqCommandStrings = []
+
+    self.reqByApiEnumStrings    = {}
+    self.reqByApiCommandStrings = {}
+
+    for require in xml.findall("require"):
+      if "comment" in require.attrib:
+        self.requireComments.append(require.attrib["comment"])
+
+      for child in require:
+        reqEnums = self.reqEnumStrings
+        reqCommands = self.reqCommandStrings
+
+        if "api" in require.attrib:
+          api = require.attrib["api"]
+          if api not in self.reqByApiEnumStrings:
+            self.reqByApiEnumStrings[api] = []
+          if api not in self.reqByApiCommandStrings:
+            self.reqByApiCommandStrings[api] = []
+          reqEnums = self.reqByApiEnumStrings[api]
+          reqCommands = self.reqByApiCommandStrings[api]
+
+        if child.tag == "enum":
+          reqEnums.append(child.attrib["name"])
+        elif child.tag == "command":
+          reqCommands.append(child.attrib["name"])
+
+  def __str__(self):
+    return self.name
+
+  def __lt__(self, other):
+    return self.name < other.name
+
 class FeatureXml:
   def __init__(self, xml):
     self.api = xml.attrib["api"]
@@ -29,7 +75,6 @@ class FeatureXml:
           self.reqEnumStrings.append(child.attrib["name"])
         elif child.tag == "command":
           self.reqCommandStrings.append(child.attrib["name"])
-        # TODO: log unexpected child
 
     for remove in xml.findall("remove"):
       for child in remove:
@@ -37,7 +82,6 @@ class FeatureXml:
           self.remEnumStrings.append(child.attrib["name"])
         elif child.tag == "command":
           self.remCommandStrings.append(child.attrib["name"])
-        # TODO: log unexpected child
 
   def __str__(self):
     return "Feature (%s:%s.%s)" % (self.api, self.major, self.minor)
@@ -170,9 +214,14 @@ class CommandXml:
   def __lt__(self, other):
     return self.name < other.name
 
+
 #
 # XML parsing
 #
+
+def parseXmlExtensions(xml):
+  extensions = [ExtensionXml(e) for e in xml.iter("extension")]
+  return sorted(extensions)
 
 def parseXmlFeatures(xml):
   features = [FeatureXml(f) for f in xml.iter("feature")]

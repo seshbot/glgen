@@ -414,5 +414,30 @@ with a newer version with impunity.
       <glx type="vendor" opcode="1427"/>
     </command>
 
+    <!-- used by gles2 extensions -->
+    <command>
+      <proto>void <name>glUseProgramStages</name></proto>
+      <param><ptype>GLuint</ptype> <name>pipeline</name></param>
+      <param group="UseProgramStageMask"><ptype>GLbitfield</ptype> <name>stages</name></param>
+      <param><ptype>GLuint</ptype> <name>program</name></param>
+    </command>
+
+    <!-- ANGLE implements 'indices' as 'const void **' (not const void * const *) -->
+    <command>
+      <proto>void <name>glMultiDrawElementsEXT</name></proto>
+      <param group="PrimitiveType"><ptype>GLenum</ptype> <name>mode</name></param>
+      <param len="COMPSIZE(primcount)">const <ptype>GLsizei</ptype> *<name>count</name></param>
+      <param group="DrawElementsType"><ptype>GLenum</ptype> <name>type</name></param>
+      <param len="COMPSIZE(primcount)">const void * *<name>indices</name></param>
+      <param><ptype>GLsizei</ptype> <name>primcount</name></param>
+      <alias name="glMultiDrawElements"/>
+    </command>
+
+    <!-- TODO: should all 'GLboolean' parameters implicitly have 'group="Boolean"' ? -->
+    <command>
+      <proto>void <name>glCoverageMaskNV</name></proto>
+      <param group="Boolean"><ptype>GLboolean</ptype> <name>mask</name></param>
+    </command>
+
   </commands>
 </registry>

@@ -1,12 +1,25 @@
 import re
 
+class Api:
+  def __init__(self, name, id):
+    self.id = id
+    self.name = name
+
+    self.features = set()
+    self.extensions = set()
+
+    self.numbers = []
+
+  def __str__(self):
+    return self.name
+
 class Feature:
   def __init__(self, data, id):
     self.id = id
     self.name = data.name
     self.data = data
 
-    self.api = data.api
+    self.api = None
     self.number = data.number
 
     self.requiredEnums = set() #[registry.enumIdsByName[name] for name in feature.reqEnumStrings]
@@ -26,7 +39,7 @@ class Feature:
     data['id'] = self.id
     data['name'] = self.name
 
-    data['api'] = self.api
+    data['api'] = self.api.name
     data['number'] = self.number
 
     data['require_comments'] = self.data.requireComments
@@ -36,6 +49,33 @@ class Feature:
 
     data['required_commands'] = map(lambda c: c.id, self.requiredCommands)
     data['removed_commands'] = map(lambda c: c.id, self.removedCommands)
+
+    return data
+
+class Extension:
+  def __init__(self, data, id):
+    self.id = id
+    self.name = data.name
+    self.data = data
+
+    self.apis = set()
+
+    self.requiredEnums = set()
+    self.requiredCommands = set()
+
+  def __str__(self):
+    return self.name
+
+  def toDictionary(self):
+    data = {}
+    data['id'] = self.id
+    data['name'] = self.name
+    data['api'] = self.api.name
+
+    data['require_comments'] = self.data.requireComments
+
+    data['required_enums'] = map(lambda e: e.id, self.requiredEnums)
+    data['required_commands'] = map(lambda c: c.id, self.requiredCommands)
 
     return data
 
@@ -49,6 +89,8 @@ class Enum:
 
     self.features = set()
     self.groups = set()
+
+    self.isBitmask = data.type == "GLbitfield"
 
   def toDictionary(self):
     data = {}
@@ -68,7 +110,10 @@ class Group:
     self.data = data
 
     self.features = set()
+    self.extensions = set()
     self.enums = set()
+
+    self.isBitmask = False
 
   def toDictionary(self):
     data = {}
@@ -117,6 +162,7 @@ class Command:
     self.baseReturnType =  _TYPE_NAME_REGEX_.match(self.returntype).group(2)
 
     self.features = set()
+    self.extensions = set()
     self.parameters = []
 
     self.parameterHashes = [p.hash for p in data.params]
@@ -136,20 +182,41 @@ class Command:
 
 
 class Registry:
-  def __init__(self, xmlFeatures, xmlEnums, xmlGroups, xmlCommands, es2Only=False):
+  def __init__(self, xmlFeatures, xmlExtensions, xmlEnums, xmlGroups, xmlCommands, es2Only=False):
     print('creating registry...')
     #
     # create entities
     #
 
+    apis = {f.api for f in xmlFeatures} | {api for ext in xmlExtensions for api in ext.supported}
+    self.apis     = [Api(a, id) for id, a in enumerate(apis)]
+    self.apisByName = {api.name: api for api in self.apis}
+
     self.features = [Feature(e, id) for id, e in enumerate(xmlFeatures)]
+    self.extensions = [Extension(e, id) for id, e in enumerate(xmlExtensions)]
     self.enums    = [Enum(e, id) for id, e in enumerate(xmlEnums)]
     self.groups   = [Group(e, id) for id, e in enumerate(xmlGroups)]
     self.commands = [Command(e, id) for id, e in enumerate(xmlCommands)]
 
+    # link features and extensions to APIs
+    for f in self.features:
+      api = self.apisByName[f.data.api]
+      f.api = api
+      api.features.add(f)
+
+    for e in self.extensions:
+      e.apis = {self.apisByName[a] for a in e.data.supported}
+      for a in e.apis:
+        a.extensions.add(e)
+
+    for a in self.apis:
+      a.numbers = sorted([f.number for f in a.features])
+
     self.features = sorted(self.features, lambda f1, f2: str(f1) < str(f2))
     if es2Only:
-      self.features = [f for f in self.features if f.api == 'gles2' and f.number == '2.0']
+      es2Features = self.apisByName['gles2'].features
+      self.features = [f for f in es2Features if f.number == '2.0']
+      self.extensions = self.apisByName['gles2'].extensions
 
     self.featuresByApi = {}
     for api in {f.api for f in self.features}:
@@ -172,12 +239,14 @@ class Registry:
     #
 
     self.featuresById = {e.id: e for e in self.features}
+    self.extensionsById = {e.id: e for e in self.extensions}
     self.enumsById    = {e.id: e for e in self.enums}
     self.groupsById   = {e.id: e for e in self.groups}
     self.commandsById = {e.id: e for e in self.commands}
     self.parametersById = {e.id: e for e in self.parameters}
 
     self.featuresByName = {e.name: e for e in self.features}
+    self.extensionsByName = {e.name: e for e in self.extensions}
     self.enumsByName    = {e.name: e for e in self.enums}
     self.groupsByName   = {e.name: e for e in self.groups}
     self.commandsByName = {e.name: e for e in self.commands}
@@ -194,6 +263,18 @@ class Registry:
 
       f.requiredCommands = {self.commandsByName[name] for name in f.data.reqCommandStrings}
       f.removedCommands  = {self.commandsByName[name] for name in f.data.remCommandStrings}
+
+    print(' - updating extension references...')
+    for e in self.extensions:
+      e.requiredEnums = {self.enumsByName[name] for name in e.data.reqEnumStrings}
+      e.requiredCommands = {self.commandsByName[name] for name in e.data.reqCommandStrings}
+
+      filterApi = lambda api: not es2Only or api == 'gles2'
+      apiSpecificEnums = {self.enumsByName[name] for api, es in e.data.reqByApiEnumStrings.iteritems() for name in es if filterApi(api)}
+      apiSpecificCommands = {self.commandsByName[name] for api, cs in e.data.reqByApiCommandStrings.iteritems() for name in cs if filterApi(api)}
+
+      e.requiredEnums |= apiSpecificEnums
+      e.requiredCommands |= apiSpecificCommands
 
     print(' - cascading feature requirements...')
     for api, features in self.featuresByApi.iteritems():
@@ -218,6 +299,7 @@ class Registry:
     print(' - updating enum references...')
     for e in self.enums:
       e.features = {f for f in self.features if e in f.requiredEnums}
+      e.extensions = {ext for ext in self.extensions if e in ext.requiredEnums}
 
     print(' - updating group references...')
     for g in self.groups:
@@ -229,22 +311,39 @@ class Registry:
           g.enums.add(e)
           e.groups.add(g)
 
+      bitmaskEnums = filter(lambda e: e.isBitmask, g.enums)
+      if len(bitmaskEnums) > 0:
+        if len(bitmaskEnums) == len(g.enums):
+          g.isBitmask = True
+        else:
+          print('   group %s enums are mixed bitmasks' % g.name)
+
       enum_feature_sets = map(lambda e: e.features, g.enums)
+      enum_extension_sets = map(lambda e: e.extensions, g.enums)
 
       union = lambda a, b: a | b
       enumFeatures = reduce(union, enum_feature_sets, set())
+      enumExtensions = reduce(union, enum_extension_sets, set())
 
       g.features = enumFeatures
+      g.extensions = enumExtensions
 
     print(' - updating command references...')
+    implicitGroupsByType = {
+      'GLboolean': self.groupsByName['Boolean'],
+    }
     for c in self.commands:
       c.features = {f for f in self.features if c in f.requiredCommands}
+      c.extensions = {e for e in self.extensions if c in e.requiredCommands}
       c.parameters = map(lambda h: self.parametersByHash[h], c.parameterHashes)
       for p in c.parameters:
         p.commands.add(c)
       groupstr = c.data.returnGroupString
       if groupstr and groupstr in self.groupsByName:
-        c.returngroup = self.groupsByName[groupstr]        
+        c.returngroup = self.groupsByName[groupstr]
+      else:
+        # this is a hack because so many registry commands are not documented correctly
+        c.returngroup = implicitGroupsByType.get(c.returntype, None)
 
     print(' - updating parameter references...')
     for p in self.parameters:
@@ -252,6 +351,42 @@ class Registry:
       if groupstr and groupstr in self.groupsByName:
         p.group = self.groupsByName[groupstr]
 
+    print(' - fixing extension command parameters')
+    for c in self.commands:
+      commandParamNames = map(lambda p: p.name, c.parameters)
+      def findParam(name):
+        if name not in commandParamNames:
+          return None
+        return next(p for p in c.parameters if p.name == name)
+
+      def fixExtCommand(suffix):
+        def copyParamGroups(baseCommand):
+          for basep in baseCommand.parameters:
+            myp = findParam(basep.name)
+            if not myp or myp.group or not basep.group:
+              continue
+            if myp.type == basep.type:
+              getgroupname = lambda g: g.name if g else 'nil'
+              print '     %s:%s - group->%s' % (c.name, basep.name, getgroupname(basep.group))
+              myp.group = basep.group
+
+        if c.name.endswith(suffix):
+          baseCommandName = c.name[:-len(suffix)]
+          baseCommand = self.commandsByName.get(baseCommandName, None)
+          if baseCommand:
+            copyParamGroups(baseCommand)
+
+      fixExtCommand('EXT')
+      fixExtCommand('ARB')
+      fixExtCommand('OES')
+      fixExtCommand('ANGLE')
+      fixExtCommand('AMD')
+      fixExtCommand('NV')
+      fixExtCommand('QCOM')
+      fixExtCommand('KHR')
+      fixExtCommand('APPLE')
+
+    print(' - filtering non-core entities...')
     # filter out all entities that are not associated with any feature
     # (i.e, extension only commands and enums)
     hasFeatures = lambda e: len(e.features) > 0
@@ -262,7 +397,16 @@ class Registry:
     self.coreCommands = filter(hasFeatures, self.commands)
     coreParamSet = {p for c in self.coreCommands for p in c.parameters}
     self.coreParameters = list(coreParamSet)
-    
+
+    hasExtensions = lambda e: len(e.extensions) > 0 and len(e.features) == 0
+    self.extEnums = filter(hasExtensions, self.enums)
+    self.extGroups = filter(hasExtensions, self.groups)
+    for g in self.extGroups:
+      g.enums = filter(hasExtensions, g.enums)
+    self.extCommands = filter(hasExtensions, self.commands)
+    extParamSet = {p for c in self.extCommands for p in c.parameters}
+    self.extParameters = list(extParamSet)
+
   def findfeature(self, api, number):
     features = [f for f in self.features if f.api == api and f.number == number]
     return features[0]

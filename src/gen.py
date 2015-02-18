@@ -40,6 +40,14 @@ import xml.etree.cElementTree as etree
 
 # TODO: incorporate <groups ... type="bitmask> (verify it matches <param type=GLbitfield)
 # TODO: resolve command return value enums (currently resolving to GLenum)
+# TODO: incorporate <require profile="compatability|core|common"> ...
+
+def checkDirExists(outputpath, force):
+  if not os.path.exists(outputpath):
+    if not force:
+      print 'error: output path %s does not exist. Specify --force to force creation of this directory' % outputpath
+      sys.exit(1)
+    os.makedirs(outputpath)
 
 def writeEntitiesToExistingFile(entities, varname, fp):
   fp.write('{ "%s": ' % varname)
@@ -76,27 +84,27 @@ if __name__ == '__main__':
 
   inputfile = args.regfile # os.path.join(os.path.dirname(__file__), 'gl.xml')
   outputpath = args.outputdir
-  if not os.path.exists(outputpath):
-    if not args.force:
-      print 'error: output path %s does not exist. Specify --force to force creation of this directory' % outputpath
-      sys.exit(1)
-    os.makedirs(outputpath)
+
+  checkDirExists(outputpath, args.force)
 
   print 'parsing registry file %s' % inputfile
   xmltree       = etree.parse(inputfile)
   xmlregistry   = xmltree.getroot()
 
   features = parseXmlFeatures(xmlregistry)
-  print '%d features found' % len(features)
+  print ' - %d features found' % len(features)
+
+  extensions = parseXmlExtensions(xmlregistry)
+  print ' - %d extensions found' % len(extensions)
 
   enums = parseXmlEnums(xmlregistry)
-  print '%d enums found' % len(enums)
+  print ' - %d enums found' % len(enums)
 
   groups = parseXmlGroups(xmlregistry, enums)
-  print '%d groups found' % len(groups)
+  print ' - %d groups found' % len(groups)
 
   commands = parseXmlCommands(xmlregistry)
-  print '%d commands found' % len(commands)
+  print ' - %d commands found' % len(commands)
 
   patchfile = args.patchfile
   if patchfile:
@@ -105,23 +113,93 @@ if __name__ == '__main__':
     patch_xmlregistry   = patch_xmltree.getroot()
 
     patch_features = parseXmlFeatures(patch_xmlregistry)
-    print '%d features found' % len(patch_features)
+    print ' - %d features found' % len(patch_features)
+
+    patch_extensions = parseXmlExtensions(patch_xmlregistry)
+    print ' - %d extensions found' % len(patch_extensions)
 
     patch_enums = parseXmlEnums(patch_xmlregistry)
-    print '%d enums found' % len(patch_enums)
+    print ' - %d enums found' % len(patch_enums)
 
     patch_groups = parseXmlGroups(patch_xmlregistry, patch_enums)
-    print '%d groups found' % len(patch_groups)
+    print ' - %d groups found' % len(patch_groups)
 
     patch_commands = parseXmlCommands(patch_xmlregistry)
-    print '%d commands found' % len(patch_commands)
+    print ' - %d commands found' % len(patch_commands)
 
     features = patchEntities(features, patch_features)
+    extensions = patchEntities(extensions, patch_extensions)
     enums = patchEntities(enums, patch_enums)
     groups = patchEntities(groups, patch_groups)
     commands = patchEntities(commands, patch_commands)
 
-  registry = Registry(features, enums, groups, commands, args.es2only)
+  registry = Registry(features, extensions, enums, groups, commands, args.es2only)
+
+
+  angleExtensions = set([
+    'GL_OES_element_index_uint',
+    'GL_OES_get_program_binary',
+    'GL_OES_packed_depth_stencil',
+    'GL_OES_rgb8_rgba8',
+    'GL_OES_standard_derivatives',
+    'GL_OES_texture_half_float',
+    'GL_OES_texture_half_float_linear',
+    'GL_OES_texture_float',
+    'GL_OES_texture_float_linear',
+    'GL_OES_texture_npot',
+    'GL_EXT_occlusion_query_boolean',
+    'GL_EXT_read_format_bgra',
+    'GL_EXT_robustness',
+    'GL_EXT_texture_compression_dxt1',
+    'GL_EXT_texture_filter_anisotropic',
+    'GL_EXT_texture_format_BGRA8888',
+    'GL_EXT_texture_storage',
+    'GL_ANGLE_depth_texture',
+    'GL_ANGLE_framebuffer_blit',
+    'GL_ANGLE_framebuffer_multisample',
+    'GL_ANGLE_instanced_arrays',
+    'GL_ANGLE_pack_reverse_row_order',
+    'GL_ANGLE_texture_compression_dxt3',
+    'GL_ANGLE_texture_compression_dxt5',
+    'GL_ANGLE_texture_usage',
+    'GL_ANGLE_translated_shader_source',
+    'GL_NV_fence',
+
+    'EGL_EXT_create_context_robustness',
+    'EGL_ANGLE_d3d_share_handle_client_buffer',
+    'EGL_ANGLE_query_surface_pointer',
+    'EGL_ANGLE_software_display',
+    'EGL_ANGLE_surface_d3d_texture_2d_share_handle',
+    'EGL_NV_post_sub_buffer',]
+  )
+
+
+  # # exploring extensions
+
+  # hashapis = lambda apis: ','.join(map(lambda a: a.name, apis))
+  # apiGroups = {hashapis(e.apis) for e in registry.extensions}
+  # for apis in apiGroups:
+  #   es = [e for e in registry.extensions if hashapis(e.apis) == apis]
+  #   print 'extensions for %s' % apis
+  #   for e in es:
+  #     angleIndicator = 'x' if e.name in angleExtensions else ''
+  #     print ' - %s %s' % (e.name, angleIndicator)
+
+  # allExtensionNames = {e.name for e in registry.extensions}
+
+  # unrecognisedAngleExtensions = angleExtensions - allExtensionNames
+
+  # print 'UNRECOGNISED ANGLE EXTENSIONS:'
+  # for name in unrecognisedAngleExtensions:
+  #   print name
+
+  # es2Api = next(api for api in registry.apis if api.name == 'gles2')
+  # print '\n\nall gles2 extensions:'
+  # for e in es2Api.extensions:
+  #   angleIndicator = 'x' if e.name in angleExtensions else ''
+  #   print ' - %s %s' % (e.name, angleIndicator)
+
+  # sys.exit(1)
 
   if args.verify:
 
@@ -185,6 +263,7 @@ if __name__ == '__main__':
 
   # TODO: extensions
   # TODO: aliases
+  # TODO: investigate '<require comment="Reuse ARB_copy_buffer">' etc
 
   if genJson:
     print 'writing js files'
@@ -208,21 +287,46 @@ if __name__ == '__main__':
     fp.close
 
   if genCpp:
-    filename = os.path.join(outputpath, 'enums.h')
+    headerpath = os.path.join(outputpath, 'include/gles2')
+    sourcepath = os.path.join(outputpath, 'src/gles2')
+    checkDirExists(headerpath, args.force)
+    checkDirExists(sourcepath, args.force)
+
+    filename = os.path.join(headerpath, 'enums.h')
     print 'writing %s' % filename
     fp = open(filename, 'w')
-    writeCppEnums(registry.coreGroups, fp)
+    writeCppEnums(registry.coreGroups, fp, 'ENUMS__H')
     fp.close
 
-    filename = os.path.join(outputpath, 'commands.h')
+    filename = os.path.join(headerpath, 'extensions_enums.h')
     print 'writing %s' % filename
     fp = open(filename, 'w')
-    writeCppCommandsHeader(registry.coreCommands, fp)
+    writeCppEnums(registry.extGroups, fp, 'EXTENSIONS_ENUMS__H')
     fp.close
 
-    filename = os.path.join(outputpath, 'commands.cpp')
+    filename = os.path.join(headerpath, 'commands.h')
     print 'writing %s' % filename
     fp = open(filename, 'w')
-    writeCppCommandsCpp(registry.coreCommands, fp)
+    writeCppCommandsHeader(registry.coreCommands, fp, ['types.h', 'enums.h'], 'COMMANDS__H')
+    fp.close
+
+    filename = os.path.join(sourcepath, 'commands.cpp')
+    print 'writing %s' % filename
+    fp = open(filename, 'w')
+    writeCppCommandsCpp(registry.coreCommands, fp, [], ['GLES2/gl2.h', 'gles2/commands.h'])
+    fp.close
+
+    # TODO: write comment indicating extension used by command
+    filename = os.path.join(headerpath, 'extensions.h')
+    print 'writing %s' % filename
+    fp = open(filename, 'w')
+    writeCppExtCommandsHeader(registry.extCommands, fp, ['types.h', 'enums.h', 'extensions_enums.h'], 'EXTENSIONS__H')
+    fp.close
+
+    # TODO: write #ifdef _extension_name_ guard around implementation (with throw() ?)
+    filename = os.path.join(sourcepath, 'extensions.cpp')
+    print 'writing %s' % filename
+    fp = open(filename, 'w')
+    writeCppExtCommandsCpp(registry.extCommands, fp, ['angle_extension_macros.h'], ['stdexcept', 'GLES2/gl2.h', 'GLES2/gl2ext.h', 'gles2/extensions.h'])
     fp.close
 
