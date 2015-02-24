@@ -47,9 +47,9 @@ HEADER_TEMPLATE = """\
 {{'\\n'.join(['#include <%s>' % h for h in SYSTEM_HEADERS]) if 'SYSTEM_HEADERS' in locals() else ''}}
 {{'\\n'.join(['#include "%s"' % h for h in LOCAL_HEADERS]) if 'LOCAL_HEADERS' in locals() else ''}}
 
-namespace gl {
+namespace ${NAMESPACE} {
 ${CONTENT}
-} // namespace gl
+} // namespace ${NAMESPACE}
 
 #endif // #ifndef ${HEADER_GUARD}
 """
@@ -60,12 +60,10 @@ CPP_TEMPLATE = """\
  * Command line: ${COMMANDLINE}
  */
 
-#define GL_GLEXT_PROTOTYPES
-
 {{'\\n'.join(['#include <%s>' % h for h in SYSTEM_HEADERS]) if 'SYSTEM_HEADERS' in locals() else ''}}
 {{'\\n'.join(['#include "%s"' % h for h in LOCAL_HEADERS]) if 'LOCAL_HEADERS' in locals() else ''}}
 
-namespace gl {
+namespace ${NAMESPACE} {
 ${CONTENT}
 }
 """
@@ -159,7 +157,7 @@ def toTypeName(v):
 
   prevTypename = _TYPE_NAME_REGEX_.match(v).group(2)
   newTypename = prevTypename[2:] if prevTypename.startswith('GL') else prevTypename
-  newTypename = newTypename + '_t' if newTypename not in exceptions else newTypename
+  newTypename = 'gl::%s_t' % newTypename if newTypename not in exceptions else newTypename
   return v.replace(prevTypename, newTypename)
 
 def getGroupEnumName(group):
@@ -181,7 +179,7 @@ def getTypeString(param):
     if param.group:
       enumName = getGroupEnumName(param.group)
       if param.type == 'GLbitfield':
-        return 'bitmask<%s>' % enumName
+        return 'gl::bitmask<%s>' % enumName
       return enumName
     return toTypeName(param.baseType)
 
@@ -194,7 +192,7 @@ def getTypeString(param):
 # serialisation procedures
 #
 
-def writeCppEnums(groups, fp, headerGuard):
+def writeCppEnums(groups, fp, namespace, headerGuard):
   def compileEnum(enum):
     def toEnumValue(v):
       reserved_words = ['return', 'bool', 'true', 'false', 'byte', 'long', 'int', 'short', 'char', 'float', 'double', 'unsigned_byte', 'unsigned_short', 'unsigned_int']
@@ -219,6 +217,7 @@ def writeCppEnums(groups, fp, headerGuard):
   content = '\n'.join([compileGroup(g) for g in groups])
 
   vars = {
+    'namespace': namespace,
     'content': content,
     'header_guard': headerGuard,
   }
@@ -226,7 +225,7 @@ def writeCppEnums(groups, fp, headerGuard):
   fp.write(compileTemplate(HEADER_TEMPLATE, vars))
 
 
-def writeCppCommandsHeader(commands, fp, headers, headerGuard):
+def writeCppCommandsHeader(commands, fp, namespace, headers, headerGuard):
   def compileParameter(param):
     typename = getTypeString(param)
     vars = {'type': typename, 'name': param.name}
@@ -243,6 +242,7 @@ def writeCppCommandsHeader(commands, fp, headers, headerGuard):
   content = '\n'.join([compileCommand(c) for c in commands])
 
   vars = {
+    'namespace': namespace,
     'content': content,
     'header_guard': headerGuard,
     'LOCAL_HEADERS': headers,
@@ -250,7 +250,7 @@ def writeCppCommandsHeader(commands, fp, headers, headerGuard):
 
   fp.write(compileTemplate(HEADER_TEMPLATE, vars))
 
-def writeCppCommandsCpp(commands, fp, headers, sysHeaders):
+def writeCppCommandsCpp(commands, fp, namespace, headers, sysHeaders):
   def compileParameter(param):
     typename = getTypeString(param)
     vars = {'type': typename, 'name': param.name}
@@ -277,12 +277,13 @@ def writeCppCommandsCpp(commands, fp, headers, sysHeaders):
     vars['static_cast_begin'] = 'static_cast<%s>(' % vars['return_type'] if command.returngroup else ''
     vars['static_cast_end'] = ')' if command.returngroup else ''
     vars['params'] = command.parameters
-    vars['param_types'] = {p.name: toTypeName(p.baseType) for p in command.parameters}
+    vars['param_types'] = {p.name: toTypeName(p.baseType) if not p.group else getGroupEnumName(p.group) for p in command.parameters}
     return compileTemplate(COMMAND_IMPLEMENTATION_TEMPLATE, vars)
 
   content = '\n'.join([compileCommand(c) for c in commands])
 
   vars = {
+    'namespace': namespace,
     'content': content,
     'LOCAL_HEADERS': headers,
     'SYSTEM_HEADERS': sysHeaders
@@ -290,7 +291,7 @@ def writeCppCommandsCpp(commands, fp, headers, sysHeaders):
 
   fp.write(compileTemplate(CPP_TEMPLATE, vars))
 
-def writeCppExtCommandsHeader(commands, fp, headers, headerGuard):
+def writeCppExtCommandsHeader(commands, fp, namespace, headers, headerGuard):
   def compileParameter(param):
     typename = getTypeString(param)
     vars = {'type': typename, 'name': param.name}
@@ -318,6 +319,7 @@ def writeCppExtCommandsHeader(commands, fp, headers, headerGuard):
   content = '\n'.join([compileCommand(c) for c in sortedCommands])
 
   vars = {
+    'namespace': namespace,
     'content': content,
     'header_guard': headerGuard,
     'LOCAL_HEADERS': headers,
@@ -325,7 +327,7 @@ def writeCppExtCommandsHeader(commands, fp, headers, headerGuard):
 
   fp.write(compileTemplate(HEADER_TEMPLATE, vars))
 
-def writeCppExtCommandsCpp(commands, fp, headers, sysHeaders):
+def writeCppExtCommandsCpp(commands, fp, namespace, headers, sysHeaders):
   def compileParameter(param):
     typename = getTypeString(param)
     vars = {'type': typename, 'name': param.name}
@@ -359,6 +361,7 @@ def writeCppExtCommandsCpp(commands, fp, headers, sysHeaders):
   content = '\n'.join([compileCommand(c) for c in commands])
 
   vars = {
+    'namespace': namespace,
     'content': content,
     'LOCAL_HEADERS': headers,
     'SYSTEM_HEADERS': sysHeaders

@@ -68,6 +68,9 @@ if __name__ == '__main__':
   parser.add_argument('-p', '--patchfile', help='XML patch file')
   parser.add_argument('-o', '--outputdir', default='.', help='directory into which output files are dumped')
   parser.add_argument('--force', action='store_true', help='force creation of output directory')
+  parser.add_argument('-i', '--includesubdir', help='sub-directory into which output header files are dumped')
+  parser.add_argument('-s', '--sourcesubdir', help='sub-directory into which output source files are dumped')
+  parser.add_argument('--namespace', default='gl', help='C++ namespace into which all symbols will be placed')
   parser.add_argument('-j', '--json', action='store_true')
   parser.add_argument('-c', '--cpp', action='store_true')
   parser.add_argument('--verify', action='store_true')
@@ -83,7 +86,7 @@ if __name__ == '__main__':
     genCpp = True
 
   inputfile = args.regfile # os.path.join(os.path.dirname(__file__), 'gl.xml')
-  outputpath = args.outputdir
+  outputpath = args.outputdir  
 
   checkDirExists(outputpath, args.force)
 
@@ -286,46 +289,53 @@ if __name__ == '__main__':
     fp.close
 
   if genCpp:
-    headerpath = os.path.join(outputpath, 'include/gles2')
-    sourcepath = os.path.join(outputpath, 'src/gles2')
+    namespace = args.namespace
+    includeSubdir = args.includesubdir if args.includesubdir else 'include'
+    sourceSubdir = args.sourcesubdir if args.sourcesubdir else 'src'
+    headerpath = os.path.join(outputpath, includeSubdir, namespace)
+    sourcepath = os.path.join(outputpath, sourceSubdir, namespace)
+
+    print 'writing header files to %s' % headerpath
+    print 'writing source files to %s' % sourcepath
+
     checkDirExists(headerpath, args.force)
     checkDirExists(sourcepath, args.force)
 
     filename = os.path.join(headerpath, 'enums.h')
     print 'writing %s' % filename
     fp = open(filename, 'w')
-    writeCppEnums(registry.coreGroups, fp, 'ENUMS__H')
+    writeCppEnums(registry.coreGroups, fp, namespace, 'ENUMS__H')
     fp.close
 
     filename = os.path.join(headerpath, 'extensions_enums.h')
     print 'writing %s' % filename
     fp = open(filename, 'w')
-    writeCppEnums(registry.extGroups, fp, 'EXTENSIONS_ENUMS__H')
+    writeCppEnums(registry.extGroups, fp, namespace, 'EXTENSIONS_ENUMS__H')
     fp.close
 
     filename = os.path.join(headerpath, 'commands.h')
     print 'writing %s' % filename
     fp = open(filename, 'w')
-    writeCppCommandsHeader(registry.coreCommands, fp, ['types.h', 'enums.h'], 'COMMANDS__H')
+    writeCppCommandsHeader(registry.coreCommands, fp, namespace, ['../types.h', 'enums.h'], 'COMMANDS__H')
     fp.close
 
     filename = os.path.join(sourcepath, 'commands.cpp')
     print 'writing %s' % filename
     fp = open(filename, 'w')
-    writeCppCommandsCpp(registry.coreCommands, fp, [], ['GLES2/gl2.h', 'gles2/commands.h'])
+    writeCppCommandsCpp(registry.coreCommands, fp, namespace, [], ['GLES2/gl2.h', 'glpp/gles2/commands.h'])
     fp.close
 
     # TODO: write comment indicating extension used by command
     filename = os.path.join(headerpath, 'extensions.h')
     print 'writing %s' % filename
     fp = open(filename, 'w')
-    writeCppExtCommandsHeader(registry.extCommands, fp, ['types.h', 'enums.h', 'extensions_enums.h'], 'EXTENSIONS__H')
+    writeCppExtCommandsHeader(registry.extCommands, fp, namespace, ['../types.h', 'enums.h', 'extensions_enums.h'], 'EXTENSIONS__H')
     fp.close
 
     # TODO: write #ifdef _extension_name_ guard around implementation (with throw() ?)
     filename = os.path.join(sourcepath, 'extensions.cpp')
     print 'writing %s' % filename
     fp = open(filename, 'w')
-    writeCppExtCommandsCpp(registry.extCommands, fp, ['angle_extension_macros.h'], ['stdexcept', 'GLES2/gl2.h', 'GLES2/gl2ext.h', 'gles2/extensions.h'])
+    writeCppExtCommandsCpp(registry.extCommands, fp, namespace, ['angle_extension_macros.h'], ['stdexcept', 'GLES2/gl2.h', 'GLES2/gl2ext.h', 'glpp/gles2/extensions.h'])
     fp.close
 

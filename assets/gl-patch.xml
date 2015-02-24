@@ -106,6 +106,8 @@ with a newer version with impunity.
       <enum name="GL_LUMINANCE_ALPHA"/>
       <enum name="GL_RGB"/>
       <enum name="GL_RGBA"/>
+
+      <enum name="GL_BGRA_EXT"/>
     </group>
     <group name="TextureUnit" comment="used by glActiveTexture">
       <enum name="GL_TEXTURE0"/>
