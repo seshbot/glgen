@@ -370,11 +370,24 @@ class Registry:
               print '     %s:%s - group->%s' % (c.name, basep.name, getgroupname(basep.group))
               myp.group = basep.group
 
+        def mergeParams(myparams, baseparams):
+          def findBaseParamByName(name):
+            return next((p for p in baseparams if p.name == name), None)
+
+          def chooseBest(myp, basep):
+            if myp.group or not basep or not basep.group or myp.type != basep.type:
+              return myp
+            getgroupname = lambda g: g.name if g else 'nil'
+            print '     %s:%s - group->%s' % (c.name, basep.name, getgroupname(basep.group))
+            return basep
+
+          return [chooseBest(p, findBaseParamByName(p.name)) for p in myparams]
+
         if c.name.endswith(suffix):
           baseCommandName = c.name[:-len(suffix)]
           baseCommand = self.commandsByName.get(baseCommandName, None)
           if baseCommand:
-            copyParamGroups(baseCommand)
+            c.parameters = mergeParams(c.parameters, baseCommand.parameters)
 
       fixExtCommand('EXT')
       fixExtCommand('ARB')

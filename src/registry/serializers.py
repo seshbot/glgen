@@ -117,6 +117,56 @@ EXT_COMMAND_IMPLEMENTATION_TEMPLATE = """\
     }
 """
 
+
+GET_CORE_PROC_ADDRESS_DECLARATION_TEMPLATE = """\
+    // some extension managers use a 'getProcAddress()' function to load core functions 
+    // although getProcAddress() functions are only meant to be used to load extensions.
+    gl::gl_proc get_core_proc_address(const char* proc_name);
+
+    // ANGLE's eglGetProcAddress() only returns pointers to extension functions, this function
+    // behaves the way GLAD would expect it to
+    gl::gl_proc get_proc_address(get_gl_proc_func get_extension_proc, const char* proc_name);
+
+    bool is_core_proc(const char* proc_name);
+
+"""
+
+GET_CORE_PROC_ADDRESS_DEFINITION_TEMPLATE = """\
+  namespace {
+     struct proc_name_address_t {
+        const char * name;
+        gl::gl_proc address;
+     };
+
+     gl::gl_proc get_proc_address_impl(const char* proc_name) {
+        static const proc_name_address_t proc_info[] = {
+          {{'\\n          '.join(['{ "%s", reinterpret_cast<gl::gl_proc>(%s) },' % (c.name, c.name) for c in commands])}}
+        };
+
+        for (auto & inf : proc_info) {
+          if (strcmp(proc_name, inf.name) == 0)
+            return inf.address;
+        }
+        
+        return nullptr;
+     }
+  }
+
+  gl::gl_proc get_core_proc_address(const char* proc_name) {
+    return get_proc_address_impl(proc_name);
+  }
+
+  gl::gl_proc get_proc_address(get_gl_proc_func get_extension_proc, const char* proc_name) {
+    if (is_core_proc(proc_name)) return get_core_proc_address(proc_name);
+    return get_extension_proc(proc_name);
+  }
+
+  bool is_core_proc(const char* proc_name) {
+    return nullptr != get_proc_address_impl(proc_name);
+  }
+
+"""
+
 import re
 
 def compileTemplate(template, vars):
@@ -127,7 +177,7 @@ def compileTemplate(template, vars):
   compiled = template
 
   # match {{.*}} and capture expression
-  eval_expr_pattern = re.compile('{{([^}]*)}}', re.IGNORECASE)
+  eval_expr_pattern = re.compile('{{(.*?)}}', re.IGNORECASE)
 
   def evalExpression(match):
     expr = match.group(1)
@@ -136,7 +186,7 @@ def compileTemplate(template, vars):
   compiled = eval_expr_pattern.sub(evalExpression, compiled)
 
   # match '${.*}' and capture variable name
-  subst_var_pattern = re.compile('\${([^}]*)}', re.IGNORECASE)
+  subst_var_pattern = re.compile('\${(.*?)}', re.IGNORECASE)
   lowervars = {name.lower(): val for name, val in vars.iteritems()}
 
   def substituteVar(match):
@@ -239,6 +289,7 @@ def writeCppCommandsHeader(commands, fp, namespace, headers, headerGuard):
     vars['return_type'] = toTypeName(command.returntype) if not command.returngroup else getGroupEnumName(command.returngroup)
     return compileTemplate(COMMAND_PROTOTYPE_TEMPLATE, vars)
 
+  # content = compileTemplate(GET_CORE_PROC_ADDRESS_DECLARATION_TEMPLATE, {'commands': commands})
   content = '\n'.join([compileCommand(c) for c in commands])
 
   vars = {
@@ -280,6 +331,7 @@ def writeCppCommandsCpp(commands, fp, namespace, headers, sysHeaders):
     vars['param_types'] = {p.name: toTypeName(p.baseType) if not p.group else getGroupEnumName(p.group) for p in command.parameters}
     return compileTemplate(COMMAND_IMPLEMENTATION_TEMPLATE, vars)
 
+  #content = compileTemplate(GET_CORE_PROC_ADDRESS_DEFINITION_TEMPLATE, {'commands': commands})
   content = '\n'.join([compileCommand(c) for c in commands])
 
   vars = {

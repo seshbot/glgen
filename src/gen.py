@@ -322,7 +322,7 @@ if __name__ == '__main__':
     filename = os.path.join(sourcepath, 'commands.cpp')
     print 'writing %s' % filename
     fp = open(filename, 'w')
-    writeCppCommandsCpp(registry.coreCommands, fp, namespace, [], ['GLES2/gl2.h', 'glpp/gles2/commands.h'])
+    writeCppCommandsCpp(registry.coreCommands, fp, namespace, [], ['string.h', 'GLES2/gl2.h', 'glpp/gles2/commands.h'])
     fp.close
 
     # TODO: write comment indicating extension used by command

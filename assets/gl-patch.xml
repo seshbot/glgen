@@ -17,16 +17,17 @@ with a newer version with impunity.
       <enum name="GL_READ_FRAMEBUFFER"/>
       <enum name="GL_FRAMEBUFFER"/>
     </group>
+    <!-- TODO: why is the GLES2 C++ dumper dumping all of these values? only the DRAW ones should be dumped -->
     <group name="BufferUsageARB" comment="used by glBufferData">
-      <enum name="GL_ARRAY_BUFFER"/>
-      <enum name="GL_COPY_READ_BUFFER"/>
-      <enum name="GL_COPY_WRITE_BUFFER"/>
-      <enum name="GL_ELEMENT_ARRAY_BUFFER"/>
-      <enum name="GL_PIXEL_PACK_BUFFER"/>
-      <enum name="GL_PIXEL_UNPACK_BUFFER"/>
-      <enum name="GL_TEXTURE_BUFFER"/>
-      <enum name="GL_TRANSFORM_FEEDBACK_BUFFER"/>
-      <enum name="GL_UNIFORM_BUFFER"/>
+      <enum name="GL_STREAM_DRAW"/>
+      <enum name="GL_STREAM_READ"/>
+      <enum name="GL_STREAM_COPY"/>
+      <enum name="GL_STATIC_DRAW"/>
+      <enum name="GL_STATIC_READ"/>
+      <enum name="GL_STATIC_COPY"/>
+      <enum name="GL_DYNAMIC_DRAW"/>
+      <enum name="GL_DYNAMIC_READ"/>
+      <enum name="GL_DYNAMIC_COPY"/>
     </group>
     <group name="BufferTargetARB" comment="used by glGetBufferParameteriv,glBindBuffer,glBufferData,glBufferSubData">
       <enum name="GL_ARRAY_BUFFER"/>
@@ -156,6 +157,7 @@ with a newer version with impunity.
          unless GL_OES_element_index_uint is supported
       <enum name="GL_UNSIGNED_INT"/>
     -->
+      <enum name="GL_UNSIGNED_INT"/>
       <enum name="GL_UNSIGNED_BYTE"/>
       <enum name="GL_UNSIGNED_SHORT"/>
     </group>
@@ -253,9 +255,39 @@ with a newer version with impunity.
       <enum name="GL_DEPTH24_STENCIL8"/>
       <enum name="GL_DEPTH32F_STENCIL8"/>
       <enum name="GL_STENCIL_INDEX8"/>
+
+      <!-- GL_EXT_texture_storage - TODO: add many others? -->
+      <enum name="GL_BGRA8_EXT"/>
     </group>
-    <!-- TODO: apply this to glGetActiveUniform once we can allow for pointers to enums -->
+    <group name="AttribType" comment="used by glGetActiveAttrib">
+      <enum name="GL_FLOAT"/>
+      <enum name="GL_FLOAT_VEC2"/>
+      <enum name="GL_FLOAT_VEC3"/>
+      <enum name="GL_FLOAT_VEC4"/>
+      <enum name="GL_FLOAT_MAT2"/>
+      <enum name="GL_FLOAT_MAT3"/>
+      <enum name="GL_FLOAT_MAT4"/>
+    </group>
     <group name="UniformType" comment="used by glGetActiveUniform">
+      <enum name="GL_FLOAT"/>
+      <enum name="GL_FLOAT_VEC2"/>
+      <enum name="GL_FLOAT_VEC3"/>
+      <enum name="GL_FLOAT_VEC4"/>
+      <enum name="GL_INT"/>
+      <enum name="GL_INT_VEC2"/>
+      <enum name="GL_INT_VEC3"/>
+      <enum name="GL_INT_VEC4"/>
+      <enum name="GL_BOOL"/>
+      <enum name="GL_BOOL_VEC2"/>
+      <enum name="GL_BOOL_VEC3"/>
+      <enum name="GL_BOOL_VEC4"/>
+      <enum name="GL_FLOAT_MAT2"/>
+      <enum name="GL_FLOAT_MAT3"/>
+      <enum name="GL_FLOAT_MAT4"/>
+      <enum name="GL_SAMPLER_2D"/>
+      <enum name="GL_SAMPLER_CUBE"/>
+
+      <!-- EXTENDED LIST (not GLES2)
       <enum name="GL_FLOAT"/>
       <enum name="GL_FLOAT_VEC2"/>
       <enum name="GL_FLOAT_VEC3"/>
@@ -361,7 +393,98 @@ with a newer version with impunity.
       <enum name="GL_UNSIGNED_INT_IMAGE_2D_MULTISAMPLE"/>
       <enum name="GL_UNSIGNED_INT_IMAGE_2D_MULTISAMPLE_ARRAY"/>
       <enum name="GL_UNSIGNED_INT_ATOMIC_COUNTER"/>
+      -->
     </group>
+
+    <!-- TODO: this is only GLES2 stuff for now -->
+    <group name="GetPName">
+      <enum name="GL_ACTIVE_TEXTURE"/>
+      <enum name="GL_ALIASED_LINE_WIDTH_RANGE"/>
+      <enum name="GL_ALIASED_POINT_SIZE_RANGE"/>
+      <enum name="GL_ALPHA_BITS"/>
+      <enum name="GL_ARRAY_BUFFER_BINDING"/>
+      <enum name="GL_BLEND"/>
+      <enum name="GL_BLEND_COLOR"/>
+      <enum name="GL_BLEND_DST_ALPHA"/>
+      <enum name="GL_BLEND_DST_RGB"/>
+      <enum name="GL_BLEND_EQUATION_ALPHA"/>
+      <enum name="GL_BLEND_EQUATION_RGB"/>
+      <enum name="GL_BLEND_SRC_ALPHA"/>
+      <enum name="GL_BLEND_SRC_RGB"/>
+      <enum name="GL_BLUE_BITS"/>
+      <enum name="GL_COLOR_CLEAR_VALUE"/>
+      <enum name="GL_COLOR_WRITEMASK"/>
+      <enum name="GL_COMPRESSED_TEXTURE_FORMATS"/>
+      <enum name="GL_CULL_FACE"/>
+      <enum name="GL_CULL_FACE_MODE"/>
+      <enum name="GL_CURRENT_PROGRAM"/>
+      <enum name="GL_DEPTH_BITS"/>
+      <enum name="GL_DEPTH_CLEAR_VALUE"/>
+      <enum name="GL_DEPTH_FUNC"/>
+      <enum name="GL_DEPTH_RANGE"/>
+      <enum name="GL_DEPTH_TEST"/>
+      <enum name="GL_DEPTH_WRITEMASK"/>
+      <enum name="GL_DITHER"/>
+      <enum name="GL_ELEMENT_ARRAY_BUFFER_BINDING"/>
+      <enum name="GL_FRAMEBUFFER_BINDING"/>
+      <enum name="GL_FRONT_FACE"/>
+      <enum name="GL_GENERATE_MIPMAP_HINT"/>
+      <enum name="GL_GREEN_BITS"/>
+      <enum name="GL_IMPLEMENTATION_COLOR_READ_FORMAT"/>
+      <enum name="GL_IMPLEMENTATION_COLOR_READ_TYPE"/>
+      <enum name="GL_LINE_WIDTH"/>
+      <enum name="GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS"/>
+      <enum name="GL_MAX_CUBE_MAP_TEXTURE_SIZE"/>
+      <enum name="GL_MAX_FRAGMENT_UNIFORM_VECTORS"/>
+      <enum name="GL_MAX_RENDERBUFFER_SIZE"/>
+      <enum name="GL_MAX_TEXTURE_IMAGE_UNITS"/>
+      <enum name="GL_MAX_TEXTURE_SIZE"/>
+      <enum name="GL_MAX_VARYING_VECTORS"/>
+      <enum name="GL_MAX_VERTEX_ATTRIBS"/>
+      <enum name="GL_MAX_VERTEX_TEXTURE_IMAGE_UNITS"/>
+      <enum name="GL_MAX_VERTEX_UNIFORM_VECTORS"/>
+      <enum name="GL_MAX_VIEWPORT_DIMS"/>
+      <enum name="GL_NUM_COMPRESSED_TEXTURE_FORMATS"/>
+      <enum name="GL_NUM_SHADER_BINARY_FORMATS"/>
+      <enum name="GL_PACK_ALIGNMENT"/>
+      <enum name="GL_POLYGON_OFFSET_FACTOR"/>
+      <enum name="GL_POLYGON_OFFSET_FILL"/>
+      <enum name="GL_POLYGON_OFFSET_UNITS"/>
+      <enum name="GL_RED_BITS"/>
+      <enum name="GL_RENDERBUFFER_BINDING"/>
+      <enum name="GL_SAMPLE_ALPHA_TO_COVERAGE"/>
+      <enum name="GL_SAMPLE_BUFFERS"/>
+      <enum name="GL_SAMPLE_COVERAGE"/>
+      <enum name="GL_SAMPLE_COVERAGE_INVERT"/>
+      <enum name="GL_SAMPLE_COVERAGE_VALUE"/>
+      <enum name="GL_SAMPLES"/>
+      <enum name="GL_SCISSOR_BOX"/>
+      <enum name="GL_SCISSOR_TEST"/>
+      <enum name="GL_SHADER_BINARY_FORMATS"/>
+      <enum name="GL_SHADER_COMPILER"/>
+      <enum name="GL_STENCIL_BACK_FAIL"/>
+      <enum name="GL_STENCIL_BACK_FUNC"/>
+      <enum name="GL_STENCIL_BACK_PASS_DEPTH_FAIL"/>
+      <enum name="GL_STENCIL_BACK_PASS_DEPTH_PASS"/>
+      <enum name="GL_STENCIL_BACK_REF"/>
+      <enum name="GL_STENCIL_BACK_VALUE_MASK"/>
+      <enum name="GL_STENCIL_BACK_WRITEMASK"/>
+      <enum name="GL_STENCIL_BITS"/>
+      <enum name="GL_STENCIL_CLEAR_VALUE"/>
+      <enum name="GL_STENCIL_FAIL"/>
+      <enum name="GL_STENCIL_FUNC"/>
+      <enum name="GL_STENCIL_PASS_DEPTH_FAIL"/>
+      <enum name="GL_STENCIL_PASS_DEPTH_PASS"/>
+      <enum name="GL_STENCIL_REF"/>
+      <enum name="GL_STENCIL_TEST"/>
+      <enum name="GL_STENCIL_VALUE_MASK"/>
+      <enum name="GL_STENCIL_WRITEMASK"/>
+      <enum name="GL_SUBPIXEL_BITS"/>
+      <enum name="GL_TEXTURE_BINDING_2D"/>
+      <enum name="GL_TEXTURE_BINDING_CUBE_MAP"/>
+      <enum name="GL_UNPACK_ALIGNMENT"/>
+      <enum name="GL_VIEWPORT"/>
+    </group>    
     <group name="FramebufferStatus" comment="used by glCheckFramebufferStatus">
       <enum name="GL_FRAMEBUFFER_COMPLETE"/>
       <enum name="GL_FRAMEBUFFER_UNDEFINED"/>
@@ -372,7 +495,33 @@ with a newer version with impunity.
       <enum name="GL_FRAMEBUFFER_INCOMPLETE_MULTISAMPLE"/>
       <enum name="GL_FRAMEBUFFER_INCOMPLETE_LAYER_TARGETS"/>
     </group>
-
+    <group name="GetShaderivPName" comment="used by glGetShaderiv">
+      <enum name="GL_SHADER_TYPE"/>
+      <enum name="GL_DELETE_STATUS"/>
+      <enum name="GL_COMPILE_STATUS"/>
+      <enum name="GL_INFO_LOG_LENGTH"/>
+      <enum name="GL_SHADER_SOURCE_LENGTH"/>
+    </group>
+    <group name="GetProgramivPName" comment="used by glGetProgramiv">
+      <enum name="GL_DELETE_STATUS"/>
+      <enum name="GL_LINK_STATUS"/>
+      <enum name="GL_VALIDATE_STATUS"/>
+      <enum name="GL_INFO_LOG_LENGTH"/>
+      <enum name="GL_ATTACHED_SHADERS"/>
+      <enum name="GL_ACTIVE_ATTRIBUTES"/>
+      <enum name="GL_ACTIVE_ATTRIBUTE_MAX_LENGTH"/>
+      <enum name="GL_ACTIVE_UNIFORMS"/>
+      <enum name="GL_ACTIVE_UNIFORM_MAX_LENGTH"/>
+    </group>
+    <group name="FramebufferTextureTarget" comment="used by glFramebufferTexture2D">
+      <enum name="GL_TEXTURE_2D"/>
+      <enum name="GL_TEXTURE_CUBE_MAP_POSITIVE_X"/>
+      <enum name="GL_TEXTURE_CUBE_MAP_NEGATIVE_X"/>
+      <enum name="GL_TEXTURE_CUBE_MAP_POSITIVE_Y"/>
+      <enum name="GL_TEXTURE_CUBE_MAP_NEGATIVE_Y"/>
+      <enum name="GL_TEXTURE_CUBE_MAP_POSITIVE_Z"/>
+      <enum name="GL_TEXTURE_CUBE_MAP_NEGATIVE_Z"/>
+    </group>
   </groups>
 
   <commands>
@@ -411,6 +560,15 @@ with a newer version with impunity.
       <glx type="render" opcode="4318"/>
     </command>
     <command>
+      <proto>void <name>glRenderbufferStorageMultisample</name></proto>
+      <param group="RenderbufferTarget"><ptype>GLenum</ptype> <name>target</name></param>
+      <param><ptype>GLsizei</ptype> <name>samples</name></param>
+      <param group="InternalFormat"><ptype>GLenum</ptype> <name>internalformat</name></param>
+      <param><ptype>GLsizei</ptype> <name>width</name></param>
+      <param><ptype>GLsizei</ptype> <name>height</name></param>
+      <glx type="render" opcode="4331"/>
+    </command>
+    <command>
       <proto group="FramebufferStatus"><ptype>GLenum</ptype> <name>glCheckFramebufferStatus</name></proto>
       <param group="FramebufferTarget"><ptype>GLenum</ptype> <name>target</name></param>
       <glx type="vendor" opcode="1427"/>
@@ -441,5 +599,49 @@ with a newer version with impunity.
       <param group="Boolean"><ptype>GLboolean</ptype> <name>mask</name></param>
     </command>
 
+    <command>
+      <proto>void <name>glGetShaderiv</name></proto>
+      <param><ptype>GLuint</ptype> <name>shader</name></param>
+      <param group="GetShaderivPName"><ptype>GLenum</ptype> <name>pname</name></param>
+      <param len="COMPSIZE(pname)"><ptype>GLint</ptype> *<name>params</name></param>
+      <glx type="single" opcode="198"/>
+    </command>
+    <command>
+      <proto>void <name>glGetProgramiv</name></proto>
+      <param><ptype>GLuint</ptype> <name>program</name></param>
+      <param group="GetProgramivPName"><ptype>GLenum</ptype> <name>pname</name></param>
+      <param len="COMPSIZE(pname)"><ptype>GLint</ptype> *<name>params</name></param>
+      <glx type="single" opcode="199"/>
+    </command>
+
+    <command>
+      <proto>void <name>glGetActiveUniform</name></proto>
+      <param><ptype>GLuint</ptype> <name>program</name></param>
+      <param><ptype>GLuint</ptype> <name>index</name></param>
+      <param><ptype>GLsizei</ptype> <name>bufSize</name></param>
+      <param len="1"><ptype>GLsizei</ptype> *<name>length</name></param>
+      <param len="1"><ptype>GLint</ptype> *<name>size</name></param>
+      <param group="UniformType" len="1"><ptype>GLenum</ptype> *<name>type</name></param>
+      <param len="bufSize"><ptype>GLchar</ptype> *<name>name</name></param>
+    </command>
+    <command>
+      <proto>void <name>glGetActiveAttrib</name></proto>
+      <param><ptype>GLuint</ptype> <name>program</name></param>
+      <param><ptype>GLuint</ptype> <name>index</name></param>
+      <param><ptype>GLsizei</ptype> <name>bufSize</name></param>
+      <param len="1"><ptype>GLsizei</ptype> *<name>length</name></param>
+      <param len="1"><ptype>GLint</ptype> *<name>size</name></param>
+      <param group="AttribType" len="1"><ptype>GLenum</ptype> *<name>type</name></param>
+      <param len="bufSize"><ptype>GLchar</ptype> *<name>name</name></param>
+    </command>
+    <command>
+      <proto>void <name>glFramebufferTexture2D</name></proto>
+      <param group="FramebufferTarget"><ptype>GLenum</ptype> <name>target</name></param>
+      <param group="FramebufferAttachment"><ptype>GLenum</ptype> <name>attachment</name></param>
+      <param group="FramebufferTextureTarget"><ptype>GLenum</ptype> <name>textarget</name></param>
+      <param><ptype>GLuint</ptype> <name>texture</name></param>
+      <param><ptype>GLint</ptype> <name>level</name></param>
+      <glx type="render" opcode="4322"/>
+    </command>
   </commands>
 </registry>
