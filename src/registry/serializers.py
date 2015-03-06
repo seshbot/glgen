@@ -349,10 +349,10 @@ def writeCppExtCommandsHeader(commands, fp, namespace, headers, headerGuard):
     vars = {'type': typename, 'name': param.name}
     return compileTemplate(COMMAND_PARAMETER_TEMPLATE, vars)
 
-  def compileCommand(command):
+  def compileCommand(command, extensions):
     parameters = ', '.join([compileParameter(p) for p in command.parameters])
     vars = command.toDictionary()
-    vars['REQUIRED_EXTENSIONS'] = command.extensions
+    vars['REQUIRED_EXTENSIONS'] = extensions
     vars['name'] = toFunctionName(vars['name'])
     vars['parameter_list'] = parameters
     vars['return_type'] = toTypeName(command.returntype) if not command.returngroup else getGroupEnumName(command.returngroup)
@@ -368,7 +368,7 @@ def writeCppExtCommandsHeader(commands, fp, namespace, headers, headerGuard):
 
   sortedCommands = [c for cs in commandsByExtensions.values() for c in cs]
 
-  content = '\n'.join([compileCommand(c) for c in sortedCommands])
+  content = '\n'.join([compileCommand(c, c.extensions) for c in sortedCommands])
 
   vars = {
     'namespace': namespace,
@@ -393,11 +393,11 @@ def writeCppExtCommandsCpp(commands, fp, namespace, headers, sysHeaders):
       return 'static_cast<%s>(%s)' % (param.type, paramName)
     return paramName
 
-  def compileCommand(command):
+  def compileCommand(command, extensions):
     parameters = ', '.join([compileParameter(p) for p in command.parameters])
     arguments = ', '.join([compileArgument(p) for p in command.parameters])
     vars = command.toDictionary()
-    vars['REQUIRED_EXTENSIONS'] = command.extensions
+    vars['REQUIRED_EXTENSIONS'] = extensions
     vars['gl_name'] = vars['name']
     vars['name'] = toFunctionName(vars['name'])
     vars['parameter_list'] = parameters
@@ -410,7 +410,100 @@ def writeCppExtCommandsCpp(commands, fp, namespace, headers, sysHeaders):
     vars['param_types'] = {p.name: toTypeName(p.baseType) for p in command.parameters}
     return compileTemplate(EXT_COMMAND_IMPLEMENTATION_TEMPLATE, vars)
 
-  content = '\n'.join([compileCommand(c) for c in commands])
+  content = '\n'.join([compileCommand(c, c.extensions) for c in commands])
+
+  vars = {
+    'namespace': namespace,
+    'content': content,
+    'LOCAL_HEADERS': headers,
+    'SYSTEM_HEADERS': sysHeaders
+  }
+
+  fp.write(compileTemplate(CPP_TEMPLATE, vars))
+
+
+def writeCppExtSynthCommandsHeader(synthExtCommandsByBaseCommand, fp, namespace, headers, headerGuard):
+  baseCommands = synthExtCommandsByBaseCommand.keys()
+
+  def compileParameter(param):
+    typename = getTypeString(param)
+    vars = {'type': typename, 'name': param.name}
+    return compileTemplate(COMMAND_PARAMETER_TEMPLATE, vars)
+
+  def compileCommand(command, extensions):
+    parameters = ', '.join([compileParameter(p) for p in command.parameters])
+    vars = command.toDictionary()
+    vars['REQUIRED_EXTENSIONS'] = extensions
+    vars['name'] = toFunctionName(vars['name'])
+    vars['parameter_list'] = parameters
+    vars['return_type'] = toTypeName(command.returntype) if not command.returngroup else getGroupEnumName(command.returngroup)
+    return compileTemplate(EXT_COMMAND_PROTOTYPE_TEMPLATE, vars)
+
+  commandsByExtensions = {}
+  for c in baseCommands:
+    sortedExtensionNames = sorted(list(map(lambda e: e.name, c.extensions)))
+    extensionNamesHash = ', '.join(sortedExtensionNames)
+    if extensionNamesHash not in commandsByExtensions:
+      commandsByExtensions[extensionNamesHash] = []
+    commandsByExtensions[extensionNamesHash].append(c)
+
+  sortedCommands = [c for cs in commandsByExtensions.values() for c in cs]
+
+  def derivedExtensionsForCommand(c):
+    extensionSets = map(lambda extC: extC.extensions, synthExtCommandsByBaseCommand[c])
+    extensions = reduce(lambda a, b: a | b, extensionSets, set())
+    return extensions
+
+  content = '\n'.join([compileCommand(c, derivedExtensionsForCommand(c)) for c in sortedCommands])
+
+  vars = {
+    'namespace': namespace,
+    'content': content,
+    'header_guard': headerGuard,
+    'LOCAL_HEADERS': headers,
+  }
+
+  fp.write(compileTemplate(HEADER_TEMPLATE, vars))
+
+def writeCppExtSynthCommandsCpp(synthExtCommandsByBaseCommand, fp, namespace, headers, sysHeaders):
+  baseCommands = synthExtCommandsByBaseCommand.keys()
+
+  def compileParameter(param):
+    typename = getTypeString(param)
+    vars = {'type': typename, 'name': param.name}
+    return compileTemplate(COMMAND_PARAMETER_TEMPLATE, vars)
+  def compileArgument(param):
+    paramName = '&%s_' % param.name if param.isPointer and param.group else param.name
+    shouldCast = param.group and not param.isPointer
+    if shouldCast:
+      if param.type == 'GLbitfield':
+        paramName = paramName + '.value' 
+      return 'static_cast<%s>(%s)' % (param.type, paramName)
+    return paramName
+
+  def compileCommand(command, extensions):
+    parameters = ', '.join([compileParameter(p) for p in command.parameters])
+    arguments = ', '.join([compileArgument(p) for p in command.parameters])
+    vars = command.toDictionary()
+    vars['REQUIRED_EXTENSIONS'] = extensions
+    vars['gl_name'] = vars['name']
+    vars['name'] = toFunctionName(vars['name'])
+    vars['parameter_list'] = parameters
+    vars['argument_list'] = arguments
+    vars['return_type'] = toTypeName(command.returntype) if not command.returngroup else getGroupEnumName(command.returngroup)
+    vars['maybe_return'] = 'return ' if vars['return_type'] != 'void' else ''
+    vars['static_cast_begin'] = 'static_cast<%s>(' % vars['return_type'] if command.returngroup else ''
+    vars['static_cast_end'] = ')' if command.returngroup else ''
+    vars['params'] = command.parameters
+    vars['param_types'] = {p.name: toTypeName(p.baseType) for p in command.parameters}
+    return compileTemplate(EXT_COMMAND_IMPLEMENTATION_TEMPLATE, vars)
+
+  def derivedExtensionsForCommand(c):
+    extensionSets = map(lambda extC: extC.extensions, synthExtCommandsByBaseCommand[c])
+    extensions = reduce(lambda a, b: a | b, extensionSets, set())
+    return extensions
+
+  content = '\n'.join([compileCommand(c, derivedExtensionsForCommand(c)) for c in baseCommands])
 
   vars = {
     'namespace': namespace,

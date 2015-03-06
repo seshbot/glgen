@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<registry>
+    <comment>
+    </comment>
+
+    <types>
+    </types>
+
+    <groups>
+        <group name="Boolean">
+            <enum name="GL_FALSE"/>
+            <enum name="GL_TRUE"/>
+        </group>
+    </groups>
+
+    <enums namespace="GL" start="0x8ED0" end="0x8F4F" vendor="NV" comment="For Pat Brown, Khronos bug 3191">
+        <enum value="0x8F38" name="GL_TEXTURE0"/>
+    </enums>
+
+    <commands namespace="GL">
+        <command>
+            <proto>void <name>glCompileShader</name></proto>
+            <param><ptype>GLuint</ptype> <name>shader</name></param>
+        </command>
+    </commands>
+    <feature api="gles2" name="GL_ES_VERSION_2_0" number="2.0">
+        <require>
+            <enum name="GL_TEXTURE0"/>
+            <command name="glCompileShader"/>
+        </require>
+    </feature>
+</registry>

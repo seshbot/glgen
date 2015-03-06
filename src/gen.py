@@ -75,6 +75,8 @@ if __name__ == '__main__':
   parser.add_argument('-c', '--cpp', action='store_true')
   parser.add_argument('--verify', action='store_true')
   parser.add_argument('--es2only', action='store_true')
+  parser.add_argument('--gl2only', action='store_true')
+  parser.add_argument('--synth', action='store_true', help='synthesise core functions from extension functions (experimental)')
   parser.add_argument('regfile', help='XML registry file')
 
   args = parser.parse_args()
@@ -136,7 +138,22 @@ if __name__ == '__main__':
     groups = patchEntities(groups, patch_groups)
     commands = patchEntities(commands, patch_commands)
 
-  registry = Registry(features, extensions, enums, groups, commands, args.es2only)
+  getFilterApi = lambda: "gles2" if args.es2only else "gl" if args.gl2only else None
+  getFilterApiNumber = lambda: "2.0" if args.es2only or args.gl2only else None
+  registry = Registry(features, extensions, enums, groups, commands, getFilterApi(), getFilterApiNumber())
+
+  # if 'glBegin' not in registry.commandsByName:
+  #   print 'COMMAND NOT FOUND!!!'
+  # else:
+  #   c = registry.commandsByName['glBegin']
+  #   print 'glBegin features: %s' % (['%s:%s' % (f.api, f.number) for f in c.features])
+
+  # print 'features: %s' % (['%s:%s' % (f.api, f.number) for f in registry.features])
+  # for f in registry.features:
+  #   if f.api.name != 'gl' or f.number != '2.0':
+  #     continue
+  #   print ' %s commands: %s' % (f.name, sorted([c.name for c in f.requiredCommands]))
+  # sys.exit(1)
 
   angleExtensions = set([
     'GL_OES_element_index_uint',
@@ -325,17 +342,28 @@ if __name__ == '__main__':
     writeCppCommandsCpp(registry.coreCommands, fp, namespace, [], ['string.h', 'GLES2/gl2.h', 'glpp/gles2/commands.h'])
     fp.close
 
-    # TODO: write comment indicating extension used by command
     filename = os.path.join(headerpath, 'extensions.h')
     print 'writing %s' % filename
     fp = open(filename, 'w')
     writeCppExtCommandsHeader(registry.extCommands, fp, namespace, ['../types.h', 'enums.h', 'extensions_enums.h'], 'EXTENSIONS__H')
     fp.close
 
-    # TODO: write #ifdef _extension_name_ guard around implementation (with throw() ?)
     filename = os.path.join(sourcepath, 'extensions.cpp')
     print 'writing %s' % filename
     fp = open(filename, 'w')
     writeCppExtCommandsCpp(registry.extCommands, fp, namespace, ['angle_extension_macros.h'], ['stdexcept', 'GLES2/gl2.h', 'GLES2/gl2ext.h', 'glpp/gles2/extensions.h'])
     fp.close
 
+    # filename = os.path.join(headerpath, 'extension_synth.h')
+    # print 'writing %s' % filename
+    # fp = open(filename, 'w')
+    # writeCppExtSynthCommandsHeader(registry.synthExtCommandsByBaseCommand, fp, namespace, ['../types.h', 'enums.h', 'extensions_enums.h'], 'EXTENSION_SYNTH__H')
+    # fp.close
+
+    # filename = os.path.join(sourcepath, 'extension_synth.cpp')
+    # print 'writing %s' % filename
+    # fp = open(filename, 'w')
+    # writeCppExtSynthCommandsCpp(registry.synthExtCommandsByBaseCommand, fp, namespace, ['angle_extension_macros.h'], ['stdexcept', 'GLES2/gl2.h', 'GLES2/gl2ext.h', 'glpp/gles2/extensions.h'])
+    # fp.close
+
+  sys.exit(0)

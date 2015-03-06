@@ -182,7 +182,9 @@ class Command:
 
 
 class Registry:
-  def __init__(self, xmlFeatures, xmlExtensions, xmlEnums, xmlGroups, xmlCommands, es2Only=False):
+  def __init__(self, xmlFeatures, xmlExtensions, xmlEnums, xmlGroups, xmlCommands, filterApiName=None, filterApiNumber=None, synth=False):
+    self.EXTENSION_SUFFIXES = [ 'EXT', 'ARB', 'OES', 'ANGLE', 'AMD', 'NV', 'QCOM', 'KHR', 'APPLE' ]
+
     print('creating registry...')
     #
     # create entities
@@ -213,10 +215,10 @@ class Registry:
       a.numbers = sorted([f.number for f in a.features])
 
     self.features = sorted(self.features, lambda f1, f2: str(f1) < str(f2))
-    if es2Only:
-      es2Features = self.apisByName['gles2'].features
-      self.features = [f for f in es2Features if f.number == '2.0']
-      self.extensions = self.apisByName['gles2'].extensions
+    # if filterApi:
+    #   filteredFeatures = self.apisByName[filterApi].features
+    #   self.features = [f for f in filteredFeatures if not filterApiNumber or f.number == filterApiNumber]
+    #   self.extensions = self.apisByName[filterApi].extensions
 
     self.featuresByApi = {}
     for api in {f.api for f in self.features}:
@@ -269,9 +271,9 @@ class Registry:
       e.requiredEnums = {self.enumsByName[name] for name in e.data.reqEnumStrings}
       e.requiredCommands = {self.commandsByName[name] for name in e.data.reqCommandStrings}
 
-      filterApi = lambda api: not es2Only or api == 'gles2'
-      apiSpecificEnums = {self.enumsByName[name] for api, es in e.data.reqByApiEnumStrings.iteritems() for name in es if filterApi(api)}
-      apiSpecificCommands = {self.commandsByName[name] for api, cs in e.data.reqByApiCommandStrings.iteritems() for name in cs if filterApi(api)}
+      doFilter = lambda apiName: not filterApiName or apiName == filterApiName
+      apiSpecificEnums = {self.enumsByName[name] for api, es in e.data.reqByApiEnumStrings.iteritems() for name in es if doFilter(api)}
+      apiSpecificCommands = {self.commandsByName[name] for api, cs in e.data.reqByApiCommandStrings.iteritems() for name in cs if doFilter(api)}
 
       e.requiredEnums |= apiSpecificEnums
       e.requiredCommands |= apiSpecificCommands
@@ -389,15 +391,8 @@ class Registry:
           if baseCommand:
             c.parameters = mergeParams(c.parameters, baseCommand.parameters)
 
-      fixExtCommand('EXT')
-      fixExtCommand('ARB')
-      fixExtCommand('OES')
-      fixExtCommand('ANGLE')
-      fixExtCommand('AMD')
-      fixExtCommand('NV')
-      fixExtCommand('QCOM')
-      fixExtCommand('KHR')
-      fixExtCommand('APPLE')
+      for ext in self.EXTENSION_SUFFIXES:
+        fixExtCommand(ext)
 
     print(' - fixing group features and extensions based on commands and params...')
     def ensureGroupHasFeatures(group, features):
@@ -414,26 +409,98 @@ class Registry:
         if ensureGroupHasFeatures(p.group, c.features):
           print('   - %s:%s group %s updated' % (c.name, p.name, p.group.name))
 
-    print(' - filtering non-core entities...')
+    filterString = '%s:%s' % (filterApiName, filterApiNumber) if filterApiName and filterApiNumber else '%s' % (filterApiName) if filterApiName else 'None'
+    print(' - filtering non-core entities (%s)...' % filterString)
     # filter out all entities that are not associated with any feature
     # (i.e, extension only commands and enums)
-    hasFeatures = lambda e: len(e.features) > 0
-    self.coreEnums = filter(hasFeatures, self.enums)
-    self.coreGroups = filter(hasFeatures, self.groups)
+
+    filterApi = self.apisByName[filterApiName] if filterApiName else None
+
+    featureFilterTest = lambda e: len(e.features) > 0
+    if filterApi:
+      if filterApiNumber:
+        def anyFeaturesMatch(fs):
+          for f in fs:
+            if f.api == filterApi and f.number == filterApiNumber:
+              return True
+          return False
+        featureFilterTest = lambda e: anyFeaturesMatch(e.features)
+      else:
+        def anyFeaturesMatch(fs):
+          for f in fs:
+            if f.api == filterApi:
+              return True
+          return False
+        featureFilterTest = lambda e: anyFeaturesMatch(e.features)
+
+    self.coreEnums = filter(featureFilterTest, self.enums)
+    self.coreGroups = filter(featureFilterTest, self.groups)
     for g in self.coreGroups:
-      g.enums = filter(hasFeatures, g.enums)
-    self.coreCommands = filter(hasFeatures, self.commands)
+      g.enums = filter(featureFilterTest, g.enums)
+    self.coreCommands = filter(featureFilterTest, self.commands)
     coreParamSet = {p for c in self.coreCommands for p in c.parameters}
     self.coreParameters = list(coreParamSet)
 
-    hasExtensions = lambda e: len(e.extensions) > 0 and len(e.features) == 0
-    self.extEnums = filter(hasExtensions, self.enums)
-    self.extGroups = filter(hasExtensions, self.groups)
+    def extensionFilterTest(e):
+      # if its a core entity don't duplicate it in the extensions space
+      if not e.extensions or featureFilterTest(e):
+        return False
+      if not filterApi:
+        return True
+      for ext in e.extensions:
+        if filterApi in ext.apis: return True
+      return False
+
+    self.extEnums = filter(extensionFilterTest, self.enums)
+    self.extGroups = filter(extensionFilterTest, self.groups)
     for g in self.extGroups:
-      g.enums = filter(hasExtensions, g.enums)
-    self.extCommands = filter(hasExtensions, self.commands)
+      g.enums = filter(extensionFilterTest, g.enums)
+    self.extCommands = filter(extensionFilterTest, self.commands)
     extParamSet = {p for c in self.extCommands for p in c.parameters}
     self.extParameters = list(extParamSet)
+    print('   - %s commands, %s groups, %s enums' % (len(self.coreCommands), len(self.coreGroups), len(self.coreEnums)))
+
+    if synth:
+      print(' - synthesising base commands from extension commands...')
+      def removeSuffix(name):
+        for suffix in self.EXTENSION_SUFFIXES:
+          if name.endswith(suffix):
+            return name[:-len(suffix)]
+        return name + '-ERROR-UNRECOGNISED-SUFFIX'
+
+      def matchingExtCommands(baseCommandName, extCommands):
+        if baseCommandName not in self.commandsByName:
+          return []
+        baseCommand = self.commandsByName[baseCommandName]
+        def extCommandMatchesBaseCommand(extCommand):
+          if extCommand.returntype != baseCommand.returntype:
+            print '     - %s does not match %s - different return types (%s:%s)' % (extCommand.name, baseCommand.name, extCommand.returntype, baseCommand.returntype)
+            return False
+          if len(extCommand.parameters) != len(baseCommand.parameters):
+            print '     - %s does not match %s - different number of parameters' % (extCommand.name, baseCommand.name)
+            return False
+          for idx, p in enumerate(extCommand.parameters):
+            baseP = baseCommand.parameters[idx]
+            if p.name != baseP.name or p.type != baseP.type:
+              print '     - %s does not match %s - parameter %s:%s does not match %s:%s' % (extCommand.name, baseCommand.name, p.name, p.type, baseP.name, baseP.type)
+              return False
+          return True
+        return [c for c in extCommands if extCommandMatchesBaseCommand(c)]
+
+      extensionCommandsByBaseName = {}
+      for c in self.extCommands:
+        baseName = removeSuffix(c.name)
+        if baseName not in extensionCommandsByBaseName:
+          extensionCommandsByBaseName[baseName] = []
+        extensionCommandsByBaseName[baseName].append(c)
+
+      extensionCommandsByBaseCommand = {self.commandsByName[baseName]: matchingExtCommands(baseName, es) for baseName, es in extensionCommandsByBaseName.iteritems() if baseName in self.commandsByName and matchingExtCommands(baseName, es)}
+
+      commandsToSynth = {b: es for b, es in extensionCommandsByBaseCommand.iteritems() if not featureFilterTest(b)}
+      commandsToNotSynth = {b: es for b, es in extensionCommandsByBaseCommand.iteritems() if featureFilterTest(b)}
+
+      print '   - synthesising %s commands (not synthesising %s commands)' % (len(commandsToSynth), len(commandsToNotSynth))
+      self.synthExtCommandsByBaseCommand = commandsToSynth
 
   def findfeature(self, api, number):
     features = [f for f in self.features if f.api == api and f.number == number]

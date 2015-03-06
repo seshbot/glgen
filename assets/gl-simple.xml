@@ -1,0 +1,166 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<registry>
+    <comment>
+    </comment>
+
+    <!-- SECTION: GL type definitions. -->
+    <types>
+        <type requires="GLintptr">typedef GLintptr <name>GLvdpauSurfaceNV</name>;</type>
+    </types>
+
+    <!-- SECTION: GL parameter class type definitions. -->
+    <groups>
+        <group name="Boolean">
+            <enum name="GL_FALSE"/>
+            <enum name="GL_TRUE"/>
+        </group>
+        <group name="RenderbufferTarget" comment="used by glRenderbufferStorage,glFramebufferRenderbuffer,glBindRenderbuffer,glGetRenderbufferParameteriv">
+          <enum name="GL_RENDERBUFFER"/>
+        </group>
+        <group name="ClearBufferMask">
+            <enum name="GL_ACCUM_BUFFER_BIT"/>
+        </group>
+    </groups>
+
+    <!-- SECTION: GL enumerant (token) definitions. -->
+
+    <enums namespace="GL" group="ClearBufferMask" type="bitmask" comment="GL_{DEPTH,ACCUM,STENCIL,COLOR}_BUFFER_BIT also lie in this namespace">
+        <enum value="0x00008000" name="GL_COVERAGE_BUFFER_BIT_NV" comment="Collides ..."/>
+    </enums>
+    <enums namespace="GL" start="0x8CD0" end="0x8D5F" vendor="ARB" comment="Framebuffer object specification + headroom">
+        <enum value="0x8D41" name="GL_RENDERBUFFER"/>
+    </enums>
+    <enums namespace="GL" group="AttribMask" type="bitmask">
+        <enum value="0x00000200" name="GL_ACCUM_BUFFER_BIT"/>
+    </enums>
+    <enums namespace="GL" start="0x8ED0" end="0x8F4F" vendor="NV" comment="For Pat Brown, Khronos bug 3191">
+        <enum value="0x8F36" name="GL_COPY_READ_BUFFER"/>
+        <enum value="0x8F38" name="GL_COPY_WRITE_BUFFER"/>
+        <enum value="0x8F38" name="GL_LIGHT0"/>
+        <enum value="0x8F38" name="GL_DIFFUSE"/>
+        <enum value="0x8F38" name="GL_TEXTURE0"/>
+        <enum value="0x8F38" name="GL_DRAW_INDIRECT_BUFFER"/>
+    </enums>
+    <enums namespace="GL" start="0x8CA0" end="0x8CAF" vendor="ARB">
+        <enum value="0x8CAB" name="GL_RENDERBUFFER_SAMPLES_ANGLE"/>
+        <enum value="0x8CAB" name="GL_FRAMEBUFFER_INCOMPLETE_MULTISAMPLE_ANGLE"/>
+        <enum value="0x8CAB" name="GL_MAX_SAMPLES_ANGLE"/>
+        <enum value="0x8CAB" name="GL_DEBUG_TYPE_ERROR_ARB"/>
+    </enums>
+
+    <!-- SECTION: GL command definitions. -->
+    <commands namespace="GL">
+        <command>
+            <proto>void <name>glClear</name></proto>
+            <param group="ClearBufferMask"><ptype>GLbitfield</ptype> <name>mask</name></param>
+            <glx type="render" opcode="127"/>
+        </command>
+        <command>
+            <proto>void <name>glCompileShader</name></proto>
+            <param><ptype>GLuint</ptype> <name>shader</name></param>
+        </command>        
+        <command>
+            <proto>void <name>glRenderbufferStorageMultisampleANGLE</name></proto>
+            <param group="RenderbufferTarget"><ptype>GLenum</ptype> <name>target</name></param>
+            <param><ptype>GLenum</ptype> <name>internalformat</name></param>
+            <param><ptype>GLsizei</ptype> <name>width</name></param>
+            <param><ptype>GLsizei</ptype> <name>height</name></param>
+            <glx type="render" opcode="4318"/>
+        </command>
+        <command>
+            <proto>void <name>glCopyBufferSubData</name></proto>
+            <param><ptype>GLenum</ptype> <name>readTarget</name></param>
+            <param><ptype>GLenum</ptype> <name>writeTarget</name></param>
+        </command>
+        <command>
+            <proto><ptype>GLuint</ptype> <name>glGetDebugMessageLogARB</name></proto>
+            <param><ptype>GLuint</ptype> <name>count</name></param>
+            <alias name="glGetDebugMessageLog"/>
+        </command>
+        <command>
+            <proto>void <name>glBegin</name></proto>
+            <param group="PrimitiveType"><ptype>GLenum</ptype> <name>mode</name></param>
+            <glx type="render" opcode="4"/>
+        </command>
+        <command>
+            <proto>void <name>glFogf</name></proto>
+            <param><ptype>GLenum</ptype> <name>pname</name></param>
+            <param><ptype>GLfloat</ptype> <name>param</name></param>
+        </command>
+        <command>
+            <proto>void <name>glDrawArraysIndirect</name></proto>
+            <param><ptype>GLenum</ptype> <name>mode</name></param>
+            <param>const void *<name>indirect</name></param>
+        </command>
+    </commands>
+
+    <!-- SECTION: GL API interface definitions. -->
+    <feature api="gl" name="GL_VERSION_1_0" number="1.0">
+        <require>
+            <type name="GLvoid" comment="No longer used in headers"/>
+            <command name="glClear"/>
+        </require>
+    </feature>
+    <feature api="gl" name="GL_VERSION_2_0" number="2.0">
+        <require>
+            <command name="glCompileShader"/>
+        </require>
+    </feature>
+    <feature api="gl" name="GL_VERSION_3_1" number="3.1">
+        <require comment="Reuse ARB_copy_buffer">
+            <enum name="GL_COPY_READ_BUFFER"/>
+            <enum name="GL_COPY_WRITE_BUFFER"/>
+            <command name="glCopyBufferSubData"/>
+        </require>
+    </feature>
+    <feature api="gl" name="GL_VERSION_3_2" number="3.2">
+        <!-- OpenGL 3.2 is where core and compatibility profiles were first
+             introduced, so many, many things were removed from the core
+             profile in this version. A few were reintroduced later (e.g.
+             GetPointerv / STACK_{UNDER,OVER}FLOW by OpenGL 4.3 for debug
+             functionality). -->
+        <remove profile="core" comment="Compatibility-only GL 1.0 features removed from GL 3.2">
+            <command name="glBegin"/>
+        </remove>
+        <remove profile="core" comment="Compatibility-only GL 1.1 features removed from GL 3.2">
+            <enum name="GL_LIGHT0"/>
+        </remove>
+    </feature>
+    <feature api="gl" name="GL_VERSION_4_0" number="4.0">
+        <require comment="Reuse ARB_draw_indirect">
+            <enum name="GL_DRAW_INDIRECT_BUFFER"/>
+            <command name="glDrawArraysIndirect"/>
+        </require>
+    </feature>
+    <feature api="gles1" name="GL_VERSION_ES_CM_1_0" number="1.0">
+        <require>
+            <enum name="GL_DIFFUSE"/>
+            <enum name="GL_TEXTURE0"/>
+            <command name="glFogf"/>
+        </require>
+    </feature>
+    <feature api="gles2" name="GL_ES_VERSION_2_0" number="2.0">
+        <require>
+            <enum name="GL_TEXTURE0"/>
+            <command name="glCompileShader"/>
+        </require>
+    </feature>
+
+    <!-- SECTION: OpenGL / OpenGL ES extension interface definitions -->
+    <extensions>
+        <extension name="GL_ANGLE_framebuffer_multisample" supported="gles2">
+            <require>
+                <enum name="GL_RENDERBUFFER_SAMPLES_ANGLE"/>
+                <enum name="GL_FRAMEBUFFER_INCOMPLETE_MULTISAMPLE_ANGLE"/>
+                <enum name="GL_MAX_SAMPLES_ANGLE"/>
+                <command name="glRenderbufferStorageMultisampleANGLE"/>
+            </require>
+        </extension>
+        <extension name="GL_ARB_debug_output" supported="gl|glcore">
+            <require>
+                <enum name="GL_DEBUG_TYPE_ERROR_ARB"/>
+                <command name="glGetDebugMessageLogARB"/>
+            </require>
+        </extension>
+    </extensions>
+</registry>
