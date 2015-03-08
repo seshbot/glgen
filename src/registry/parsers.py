@@ -166,6 +166,9 @@ class ParameterXml:
       print(" WARNING: unexpected parameter format for " + self.name)
 
     self.type = " ".join([t.strip() for t in xml.itertext()][:-1]).strip()
+    # hack required because gl.xml contains 'const GLuint * const *' types which apparently arent correct
+    isConst = 'const' in self.type
+    self.type = 'const ' + self.type.replace('const', '') if isConst else self.type
 
     if self.name in self._exceptions:
       self.name += "_"

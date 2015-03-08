@@ -138,9 +138,11 @@ if __name__ == '__main__':
     groups = patchEntities(groups, patch_groups)
     commands = patchEntities(commands, patch_commands)
 
-  getFilterApi = lambda: "gles2" if args.es2only else "gl" if args.gl2only else None
+  getFilterApiName = lambda: "gles2" if args.es2only else "gl" if args.gl2only else None
   getFilterApiNumber = lambda: "2.0" if args.es2only or args.gl2only else None
-  registry = Registry(features, extensions, enums, groups, commands, getFilterApi(), getFilterApiNumber())
+  registry = Registry(features, extensions, enums, groups, commands, getFilterApiName(), getFilterApiNumber())
+
+  apis = registry.apis if not getFilterApiName() else set([registry.apisByName[getFilterApiName()]])
 
   # if 'glBegin' not in registry.commandsByName:
   #   print 'COMMAND NOT FOUND!!!'
@@ -305,12 +307,20 @@ if __name__ == '__main__':
     writeEntitiesToExistingFile(registry.coreParameters, 'parameters', fp)
     fp.close
 
+  GLES2_HEADERS = ['glad/glad.h']
+  GL2_HEADERS = ['glad/glad.h']
+
   if genCpp:
     namespace = args.namespace
     includeSubdir = args.includesubdir if args.includesubdir else 'include'
     sourceSubdir = args.sourcesubdir if args.sourcesubdir else 'src'
     headerpath = os.path.join(outputpath, includeSubdir, namespace)
     sourcepath = os.path.join(outputpath, sourceSubdir, namespace)
+
+    def getHeaderInclude(headerfile):
+      filename = os.path.join(headerpath, headerfile)
+      # assumes header output file paths will always have an 'include/' in the string
+      return re.search('include/(.*)', filename.replace('\\', '/')).group(1)
 
     print 'writing header files to %s' % headerpath
     print 'writing source files to %s' % sourcepath
@@ -339,7 +349,7 @@ if __name__ == '__main__':
     filename = os.path.join(sourcepath, 'commands.cpp')
     print 'writing %s' % filename
     fp = open(filename, 'w')
-    writeCppCommandsCpp(registry.coreCommands, fp, namespace, [], ['string.h', 'GLES2/gl2.h', 'glpp/gles2/commands.h'])
+    writeCppCommandsCpp(registry.coreCommands, fp, namespace, [], GLES2_HEADERS + ['string.h', getHeaderInclude('commands.h')])
     fp.close
 
     filename = os.path.join(headerpath, 'extensions.h')
@@ -351,7 +361,7 @@ if __name__ == '__main__':
     filename = os.path.join(sourcepath, 'extensions.cpp')
     print 'writing %s' % filename
     fp = open(filename, 'w')
-    writeCppExtCommandsCpp(registry.extCommands, fp, namespace, ['angle_extension_macros.h'], ['stdexcept', 'GLES2/gl2.h', 'GLES2/gl2ext.h', 'glpp/gles2/extensions.h'])
+    writeCppExtCommandsCpp(apis, registry.extCommands, fp, namespace, ['angle_extension_macros.h'], GLES2_HEADERS + ['stdexcept', getHeaderInclude('extensions.h')])
     fp.close
 
     # filename = os.path.join(headerpath, 'extension_synth.h')

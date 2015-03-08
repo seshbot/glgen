@@ -107,13 +107,14 @@ COMMAND_IMPLEMENTATION_TEMPLATE = """\
 
 EXT_COMMAND_IMPLEMENTATION_TEMPLATE = """\
     ${RETURN_TYPE} ${NAME}(${PARAMETER_LIST}) {
-#if {{' || '.join([e.name for e in REQUIRED_EXTENSIONS])}}    
-      {{''.join(['%s %s_; ' % (p.baseType, p.name) for p in params if p.isPointer and p.group])}}
-      ${MAYBE_RETURN}${STATIC_CAST_BEGIN}${GL_NAME}(${ARGUMENT_LIST})${STATIC_CAST_END};
-      {{''.join(['*%s = static_cast<%s>(%s_); ' % (p.name, param_types[p.name], p.name) for p in params if p.isPointer and p.group])}}
-#else
-      throw std::runtime_error("OpenGL command '${GL_NAME}' not available on this platform");
-#endif
+      if ( {{' || '.join(['GLAD_' + e.name for e in REQUIRED_EXTENSIONS])}} ) {
+        {{''.join(['%s %s_; ' % (p.baseType, p.name) for p in params if p.isPointer and p.group])}}
+        ${MAYBE_RETURN}${STATIC_CAST_BEGIN}${GL_NAME}(${ARGUMENT_LIST})${STATIC_CAST_END};
+        {{''.join(['*%s = static_cast<%s>(%s_); ' % (p.name, param_types[p.name], p.name) for p in params if p.isPointer and p.group])}}
+      }
+      else {
+        throw std::runtime_error("OpenGL command '${GL_NAME}' not available on this platform (extensions: {{', '.join([e.name for e in REQUIRED_EXTENSIONS])}})");
+      }
     }
 """
 
@@ -379,7 +380,11 @@ def writeCppExtCommandsHeader(commands, fp, namespace, headers, headerGuard):
 
   fp.write(compileTemplate(HEADER_TEMPLATE, vars))
 
-def writeCppExtCommandsCpp(commands, fp, namespace, headers, sysHeaders):
+def writeCppExtCommandsCpp(apis, commands, fp, namespace, headers, sysHeaders):
+  def filterExtensions(es):
+    # extensions that contribute to any of the given apis
+    return [e for e in es if e.apis & apis]
+
   def compileParameter(param):
     typename = getTypeString(param)
     vars = {'type': typename, 'name': param.name}
@@ -397,7 +402,7 @@ def writeCppExtCommandsCpp(commands, fp, namespace, headers, sysHeaders):
     parameters = ', '.join([compileParameter(p) for p in command.parameters])
     arguments = ', '.join([compileArgument(p) for p in command.parameters])
     vars = command.toDictionary()
-    vars['REQUIRED_EXTENSIONS'] = extensions
+    vars['REQUIRED_EXTENSIONS'] = filterExtensions(extensions)
     vars['gl_name'] = vars['name']
     vars['name'] = toFunctionName(vars['name'])
     vars['parameter_list'] = parameters

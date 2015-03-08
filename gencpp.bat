@@ -1,13 +1,10 @@
 @echo off
 
-if not exist build\* mkdir build
-if not exist build\lib\* mkdir build\lib
-if not exist build\lib\include\* mkdir build\lib\include
-if not exist build\lib\include\glpp\* mkdir build\lib\include\glpp
-if not exist build\lib\src\* mkdir build\lib\src
-if not exist build\lib\src\gles2\* mkdir build\lib\src\gles2
+xcopy /E /Y assets\cpp\include\*.* build\lib\include\glpp\
+xcopy /E /Y assets\cpp\src\common\*.* build\lib\src\gl2\
+xcopy /E /Y assets\cpp\src\common\*.* build\lib\src\gles2\
+xcopy /E /Y assets\cpp\src\gl2\*.* build\lib\src\gl2\
+xcopy /E /Y assets\cpp\src\gles2\*.* build\lib\src\gles2\
 
-copy assets\cpp\include\*.* build\lib\include\glpp\
-copy assets\cpp\src\*.* build\lib\src\gles2\
-
-python src/gen.py assets/gl.xml -p assets/gl-patch.xml -o build/lib/ --includesubdir include/glpp --sourcesubdir src --namespace gles2 --force --cpp --es2only
+start /b python src/gen.py assets/gl.xml -p assets/gl-patch.xml -o build/lib/ --includesubdir include/glpp --sourcesubdir src --namespace gles2 --force --cpp --es2only --synth
+start /b python src/gen.py assets/gl.xml -p assets/gl-patch.xml -o build/lib/ --includesubdir include/glpp --sourcesubdir src --namespace gl2 --force --cpp --gl2only
