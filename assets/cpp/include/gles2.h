@@ -4,4 +4,8 @@
 #include "gles2/commands.h"
 #include "gles2/extensions.h"
 
+namespace gles2 {
+   void init();
+}
+
 #endif // #ifndef GLES2__H

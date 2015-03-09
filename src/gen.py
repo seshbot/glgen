@@ -307,9 +307,6 @@ if __name__ == '__main__':
     writeEntitiesToExistingFile(registry.coreParameters, 'parameters', fp)
     fp.close
 
-  GLES2_HEADERS = ['glad/glad.h']
-  GL2_HEADERS = ['glad/glad.h']
-
   if genCpp:
     namespace = args.namespace
     includeSubdir = args.includesubdir if args.includesubdir else 'include'
@@ -331,13 +328,13 @@ if __name__ == '__main__':
     filename = os.path.join(headerpath, 'enums.h')
     print 'writing %s' % filename
     fp = open(filename, 'w')
-    writeCppEnums(registry.coreGroups, fp, namespace, 'ENUMS__H')
+    writeCppEnums(registry.coreGroups, fp, namespace, ['../types.h'], 'ENUMS__H')
     fp.close
 
     filename = os.path.join(headerpath, 'extensions_enums.h')
     print 'writing %s' % filename
     fp = open(filename, 'w')
-    writeCppEnums(registry.extGroups, fp, namespace, 'EXTENSIONS_ENUMS__H')
+    writeCppEnums(registry.extGroups, fp, namespace, ['../types.h'], 'EXTENSIONS_ENUMS__H')
     fp.close
 
     filename = os.path.join(headerpath, 'commands.h')
@@ -349,7 +346,7 @@ if __name__ == '__main__':
     filename = os.path.join(sourcepath, 'commands.cpp')
     print 'writing %s' % filename
     fp = open(filename, 'w')
-    writeCppCommandsCpp(registry.coreCommands, fp, namespace, [], GLES2_HEADERS + ['string.h', getHeaderInclude('commands.h')])
+    writeCppCommandsCpp(registry.coreCommands, fp, namespace, [], ['glad/glad.h', 'string.h', getHeaderInclude('commands.h')])
     fp.close
 
     filename = os.path.join(headerpath, 'extensions.h')
@@ -358,10 +355,11 @@ if __name__ == '__main__':
     writeCppExtCommandsHeader(registry.extCommands, fp, namespace, ['../types.h', 'enums.h', 'extensions_enums.h'], 'EXTENSIONS__H')
     fp.close
 
+    local_includes = ['angle_extension_macros.h'] if args.es2only else []
     filename = os.path.join(sourcepath, 'extensions.cpp')
     print 'writing %s' % filename
     fp = open(filename, 'w')
-    writeCppExtCommandsCpp(apis, registry.extCommands, fp, namespace, ['angle_extension_macros.h'], GLES2_HEADERS + ['stdexcept', getHeaderInclude('extensions.h')])
+    writeCppExtCommandsCpp(apis, registry.extCommands, fp, namespace, local_includes, ['glad/glad.h', 'stdexcept', getHeaderInclude('extensions.h')])
     fp.close
 
     # filename = os.path.join(headerpath, 'extension_synth.h')

@@ -89,6 +89,7 @@ COMMAND_PROTOTYPE_TEMPLATE = """\
     ${RETURN_TYPE} ${NAME}(${PARAMETER_LIST});
 """
 
+
 EXT_COMMAND_PROTOTYPE_TEMPLATE = """\
    /**
     * Required by extensions:
@@ -99,18 +100,14 @@ EXT_COMMAND_PROTOTYPE_TEMPLATE = """\
 
 COMMAND_IMPLEMENTATION_TEMPLATE = """\
     ${RETURN_TYPE} ${NAME}(${PARAMETER_LIST}) {
-      {{''.join(['%s %s_; ' % (p.baseType, p.name) for p in params if p.isPointer and p.group])}}
       ${MAYBE_RETURN}${STATIC_CAST_BEGIN}${GL_NAME}(${ARGUMENT_LIST})${STATIC_CAST_END};
-      {{''.join(['*%s = static_cast<%s>(%s_); ' % (p.name, param_types[p.name], p.name) for p in params if p.isPointer and p.group])}}
     }
 """
 
 EXT_COMMAND_IMPLEMENTATION_TEMPLATE = """\
     ${RETURN_TYPE} ${NAME}(${PARAMETER_LIST}) {
       if ( {{' || '.join(['GLAD_' + e.name for e in REQUIRED_EXTENSIONS])}} ) {
-        {{''.join(['%s %s_; ' % (p.baseType, p.name) for p in params if p.isPointer and p.group])}}
         ${MAYBE_RETURN}${STATIC_CAST_BEGIN}${GL_NAME}(${ARGUMENT_LIST})${STATIC_CAST_END};
-        {{''.join(['*%s = static_cast<%s>(%s_); ' % (p.name, param_types[p.name], p.name) for p in params if p.isPointer and p.group])}}
       }
       else {
         throw std::runtime_error("OpenGL command '${GL_NAME}' not available on this platform (extensions: {{', '.join([e.name for e in REQUIRED_EXTENSIONS])}})");
@@ -238,18 +235,45 @@ def getTypeString(param):
 
   return param.type.replace(param.baseType, newTypename)
 
+def getBaseTypeString(param):
+  def typeNameToUse():
+    if param.group:
+      enumName = getGroupEnumName(param.group)
+      return enumName
+    return toTypeName(param.baseType)
+
+  newTypename = typeNameToUse()
+
+  return newTypename
 
 #
 # serialisation procedures
 #
 
-def writeCppEnums(groups, fp, namespace, headerGuard):
+def _compileParameter(param):
+  typename = getTypeString(param)
+  vars = {'type': typename, 'name': param.name}
+  return compileTemplate(COMMAND_PARAMETER_TEMPLATE, vars)
+
+def _compileArgument(param):
+  paramName = 'reinterpret_cast<%s>(%s)' % (param.type, param.name) if param.isPointer and param.group or param.isStruct else param.name
+  shouldCast = param.group and not param.isPointer and not param.isStruct
+  if shouldCast:
+    if param.type == 'GLbitfield':
+      paramName = paramName + '.value' 
+    return 'static_cast<%s>(%s)' % (param.type, paramName)
+  return paramName
+
+def writeCppEnums(groups, fp, namespace, headers, headerGuard):
+  GROUPS_TO_IGNORE = ['Boolean']
+
   def compileEnum(enum):
     def toEnumValue(v):
       reserved_words = ['return', 'bool', 'true', 'false', 'byte', 'long', 'int', 'short', 'char', 'float', 'double', 'unsigned_byte', 'unsigned_short', 'unsigned_int']
       val = v[3:] if v.startswith('GL_') else v
       val = val.lower()
       val = val + '_' if val in reserved_words else val
+      val = '_' + val if val[0].isdigit() else val
       return val
     vars = {'name' : toEnumValue(enum.name), 'value': enum.value}
     return compileTemplate(ENUM_VALUE_TEMPLATE, vars)
@@ -265,25 +289,21 @@ def writeCppEnums(groups, fp, namespace, headerGuard):
     template = BITMASK_ENUM_CLASS_TEMPLATE if group.isBitmask else ENUM_CLASS_TEMPLATE
     return compileTemplate(template, vars)
 
-  content = '\n'.join([compileGroup(g) for g in groups])
+  content = '\n'.join([compileGroup(g) for g in groups if g.name not in GROUPS_TO_IGNORE])
 
   vars = {
     'namespace': namespace,
     'content': content,
     'header_guard': headerGuard,
+    'LOCAL_HEADERS': headers,
   }
 
   fp.write(compileTemplate(HEADER_TEMPLATE, vars))
 
 
 def writeCppCommandsHeader(commands, fp, namespace, headers, headerGuard):
-  def compileParameter(param):
-    typename = getTypeString(param)
-    vars = {'type': typename, 'name': param.name}
-    return compileTemplate(COMMAND_PARAMETER_TEMPLATE, vars)
-
   def compileCommand(command):
-    parameters = ', '.join([compileParameter(p) for p in command.parameters])
+    parameters = ', '.join([_compileParameter(p) for p in command.parameters])
     vars = command.toDictionary()
     vars['name'] = toFunctionName(vars['name'])
     vars['parameter_list'] = parameters
@@ -303,22 +323,9 @@ def writeCppCommandsHeader(commands, fp, namespace, headers, headerGuard):
   fp.write(compileTemplate(HEADER_TEMPLATE, vars))
 
 def writeCppCommandsCpp(commands, fp, namespace, headers, sysHeaders):
-  def compileParameter(param):
-    typename = getTypeString(param)
-    vars = {'type': typename, 'name': param.name}
-    return compileTemplate(COMMAND_PARAMETER_TEMPLATE, vars)
-  def compileArgument(param):
-    paramName = '&%s_' % param.name if param.isPointer and param.group else param.name
-    shouldCast = param.group and not param.isPointer
-    if shouldCast:
-      if param.type == 'GLbitfield':
-        paramName = paramName + '.value' 
-      return 'static_cast<%s>(%s)' % (param.type, paramName)
-    return paramName
-
   def compileCommand(command):
-    parameters = ', '.join([compileParameter(p) for p in command.parameters])
-    arguments = ', '.join([compileArgument(p) for p in command.parameters])
+    parameters = ', '.join([_compileParameter(p) for p in command.parameters])
+    arguments = ', '.join([_compileArgument(p) for p in command.parameters])
     vars = command.toDictionary()
     vars['gl_name'] = vars['name']
     vars['name'] = toFunctionName(vars['name'])
@@ -329,7 +336,7 @@ def writeCppCommandsCpp(commands, fp, namespace, headers, sysHeaders):
     vars['static_cast_begin'] = 'static_cast<%s>(' % vars['return_type'] if command.returngroup else ''
     vars['static_cast_end'] = ')' if command.returngroup else ''
     vars['params'] = command.parameters
-    vars['param_types'] = {p.name: toTypeName(p.baseType) if not p.group else getGroupEnumName(p.group) for p in command.parameters}
+    vars['param_types'] = {p.name: getBaseTypeString(p) for p in command.parameters}
     return compileTemplate(COMMAND_IMPLEMENTATION_TEMPLATE, vars)
 
   #content = compileTemplate(GET_CORE_PROC_ADDRESS_DEFINITION_TEMPLATE, {'commands': commands})
@@ -345,13 +352,8 @@ def writeCppCommandsCpp(commands, fp, namespace, headers, sysHeaders):
   fp.write(compileTemplate(CPP_TEMPLATE, vars))
 
 def writeCppExtCommandsHeader(commands, fp, namespace, headers, headerGuard):
-  def compileParameter(param):
-    typename = getTypeString(param)
-    vars = {'type': typename, 'name': param.name}
-    return compileTemplate(COMMAND_PARAMETER_TEMPLATE, vars)
-
   def compileCommand(command, extensions):
-    parameters = ', '.join([compileParameter(p) for p in command.parameters])
+    parameters = ', '.join([_compileParameter(p) for p in command.parameters])
     vars = command.toDictionary()
     vars['REQUIRED_EXTENSIONS'] = extensions
     vars['name'] = toFunctionName(vars['name'])
@@ -385,22 +387,9 @@ def writeCppExtCommandsCpp(apis, commands, fp, namespace, headers, sysHeaders):
     # extensions that contribute to any of the given apis
     return [e for e in es if e.apis & apis]
 
-  def compileParameter(param):
-    typename = getTypeString(param)
-    vars = {'type': typename, 'name': param.name}
-    return compileTemplate(COMMAND_PARAMETER_TEMPLATE, vars)
-  def compileArgument(param):
-    paramName = '&%s_' % param.name if param.isPointer and param.group else param.name
-    shouldCast = param.group and not param.isPointer
-    if shouldCast:
-      if param.type == 'GLbitfield':
-        paramName = paramName + '.value' 
-      return 'static_cast<%s>(%s)' % (param.type, paramName)
-    return paramName
-
   def compileCommand(command, extensions):
-    parameters = ', '.join([compileParameter(p) for p in command.parameters])
-    arguments = ', '.join([compileArgument(p) for p in command.parameters])
+    parameters = ', '.join([_compileParameter(p) for p in command.parameters])
+    arguments = ', '.join([_compileArgument(p) for p in command.parameters])
     vars = command.toDictionary()
     vars['REQUIRED_EXTENSIONS'] = filterExtensions(extensions)
     vars['gl_name'] = vars['name']
@@ -412,7 +401,7 @@ def writeCppExtCommandsCpp(apis, commands, fp, namespace, headers, sysHeaders):
     vars['static_cast_begin'] = 'static_cast<%s>(' % vars['return_type'] if command.returngroup else ''
     vars['static_cast_end'] = ')' if command.returngroup else ''
     vars['params'] = command.parameters
-    vars['param_types'] = {p.name: toTypeName(p.baseType) for p in command.parameters}
+    vars['param_types'] = {p.name: getBaseTypeString(p) for p in command.parameters}
     return compileTemplate(EXT_COMMAND_IMPLEMENTATION_TEMPLATE, vars)
 
   content = '\n'.join([compileCommand(c, c.extensions) for c in commands])
@@ -430,13 +419,8 @@ def writeCppExtCommandsCpp(apis, commands, fp, namespace, headers, sysHeaders):
 def writeCppExtSynthCommandsHeader(synthExtCommandsByBaseCommand, fp, namespace, headers, headerGuard):
   baseCommands = synthExtCommandsByBaseCommand.keys()
 
-  def compileParameter(param):
-    typename = getTypeString(param)
-    vars = {'type': typename, 'name': param.name}
-    return compileTemplate(COMMAND_PARAMETER_TEMPLATE, vars)
-
   def compileCommand(command, extensions):
-    parameters = ', '.join([compileParameter(p) for p in command.parameters])
+    parameters = ', '.join([_compileParameter(p) for p in command.parameters])
     vars = command.toDictionary()
     vars['REQUIRED_EXTENSIONS'] = extensions
     vars['name'] = toFunctionName(vars['name'])
@@ -473,22 +457,9 @@ def writeCppExtSynthCommandsHeader(synthExtCommandsByBaseCommand, fp, namespace,
 def writeCppExtSynthCommandsCpp(synthExtCommandsByBaseCommand, fp, namespace, headers, sysHeaders):
   baseCommands = synthExtCommandsByBaseCommand.keys()
 
-  def compileParameter(param):
-    typename = getTypeString(param)
-    vars = {'type': typename, 'name': param.name}
-    return compileTemplate(COMMAND_PARAMETER_TEMPLATE, vars)
-  def compileArgument(param):
-    paramName = '&%s_' % param.name if param.isPointer and param.group else param.name
-    shouldCast = param.group and not param.isPointer
-    if shouldCast:
-      if param.type == 'GLbitfield':
-        paramName = paramName + '.value' 
-      return 'static_cast<%s>(%s)' % (param.type, paramName)
-    return paramName
-
   def compileCommand(command, extensions):
-    parameters = ', '.join([compileParameter(p) for p in command.parameters])
-    arguments = ', '.join([compileArgument(p) for p in command.parameters])
+    parameters = ', '.join([_compileParameter(p) for p in command.parameters])
+    arguments = ', '.join([_compileArgument(p) for p in command.parameters])
     vars = command.toDictionary()
     vars['REQUIRED_EXTENSIONS'] = extensions
     vars['gl_name'] = vars['name']
@@ -500,7 +471,7 @@ def writeCppExtSynthCommandsCpp(synthExtCommandsByBaseCommand, fp, namespace, he
     vars['static_cast_begin'] = 'static_cast<%s>(' % vars['return_type'] if command.returngroup else ''
     vars['static_cast_end'] = ')' if command.returngroup else ''
     vars['params'] = command.parameters
-    vars['param_types'] = {p.name: toTypeName(p.baseType) for p in command.parameters}
+    vars['param_types'] = {p.name: getBaseTypeString(p) for p in command.parameters}
     return compileTemplate(EXT_COMMAND_IMPLEMENTATION_TEMPLATE, vars)
 
   def derivedExtensionsForCommand(c):

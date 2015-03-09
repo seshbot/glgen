@@ -134,6 +134,7 @@ class Parameter:
     self.type = data.type
     self.baseType = _TYPE_NAME_REGEX_.match(self.type).group(2)
     self.isPointer = '*' in self.type
+    self.isStruct = data.isStruct
     self.data = data
     self.hash = data.hash
     self.commands = set()
@@ -331,25 +332,19 @@ class Registry:
       g.extensions = enumExtensions
 
     print(' - updating command references...')
-    implicitGroupsByType = {
-      'GLboolean': self.groupsByName['Boolean'],
-    }
     for c in self.commands:
       c.features = {f for f in self.features if c in f.requiredCommands}
       c.extensions = {e for e in self.extensions if c in e.requiredCommands}
       c.parameters = map(lambda h: self.parametersByHash[h], c.parameterHashes)
       for p in c.parameters:
         p.commands.add(c)
-      groupstr = c.data.returnGroupString
+      groupstr = c.data.returnGroupString if c.data.returnGroupString != "Boolean" else None
       if groupstr and groupstr in self.groupsByName:
         c.returngroup = self.groupsByName[groupstr]
-      else:
-        # this is a hack because so many registry commands are not documented correctly
-        c.returngroup = implicitGroupsByType.get(c.returntype, None)
 
     print(' - updating parameter references...')
     for p in self.parameters:
-      groupstr = p.data.groupString
+      groupstr = p.data.groupString if p.data.groupString != "Boolean" else None
       if groupstr and groupstr in self.groupsByName:
         p.group = self.groupsByName[groupstr]
 
@@ -395,19 +390,22 @@ class Registry:
         fixExtCommand(ext)
 
     print(' - fixing group features and extensions based on commands and params...')
-    def ensureGroupHasFeatures(group, features):
+    def ensureGroupHasFeaturesAndExtensions(group, features, extensions):
       if not group:
         return
       prevFeatureCount = len(group.features)
+      prevExtensionCount = len(group.extensions)
       group.features |= features
+      group.extensions |= extensions
       for e in group.enums:
         e.features |= features
-      return len(group.features) > prevFeatureCount
+        e.extensions |= extensions
+      return len(group.features) > prevFeatureCount or len(group.extensions) > prevExtensionCount
 
     for c in self.commands:
       for p in c.parameters:
-        if ensureGroupHasFeatures(p.group, c.features):
-          print('   - %s:%s group %s updated' % (c.name, p.name, p.group.name))
+        if ensureGroupHasFeaturesAndExtensions(p.group, c.features, c.extensions):
+          print('   - %s:%s group %s updated' % (c.name, p.name, p.group.name))       
 
     filterString = '%s:%s' % (filterApiName, filterApiNumber) if filterApiName and filterApiNumber else '%s' % (filterApiName) if filterApiName else 'None'
     print(' - filtering non-core entities (%s)...' % filterString)

@@ -173,7 +173,9 @@ class ParameterXml:
     if self.name in self._exceptions:
       self.name += "_"
 
+    self.isStruct = False
     if self.type.startswith("struct "):
+      self.isStruct = True
       self.type = self.type[7:]
 
     self.groupString = xml.attrib.get("group", None)
