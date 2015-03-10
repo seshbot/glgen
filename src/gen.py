@@ -355,11 +355,10 @@ if __name__ == '__main__':
     writeCppExtCommandsHeader(registry.extCommands, fp, namespace, ['../types.h', 'enums.h', 'extensions_enums.h'], 'EXTENSIONS__H')
     fp.close
 
-    local_includes = ['angle_extension_macros.h'] if args.es2only else []
     filename = os.path.join(sourcepath, 'extensions.cpp')
     print 'writing %s' % filename
     fp = open(filename, 'w')
-    writeCppExtCommandsCpp(apis, registry.extCommands, fp, namespace, local_includes, ['glad/glad.h', 'stdexcept', getHeaderInclude('extensions.h')])
+    writeCppExtCommandsCpp(apis, registry.extCommands, fp, namespace, [], ['glad/glad.h', 'stdexcept', getHeaderInclude('extensions.h')])
     fp.close
 
     # filename = os.path.join(headerpath, 'extension_synth.h')

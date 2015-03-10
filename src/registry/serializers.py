@@ -93,7 +93,7 @@ COMMAND_PROTOTYPE_TEMPLATE = """\
 EXT_COMMAND_PROTOTYPE_TEMPLATE = """\
    /**
     * Required by extensions:
-{{'\\n'.join(['    *  - %s (%s)' % (e.name, ','.join(map(lambda api: api.name, e.apis))) for e in REQUIRED_EXTENSIONS])}}
+{{'\\n'.join(['    *  - %s (%s)' % (e.name, ','.join(sorted(map(lambda api: api.name, e.apis)))) for e in REQUIRED_EXTENSIONS])}}
     */
     ${RETURN_TYPE} ${NAME}(${PARAMETER_LIST});
 """
@@ -269,7 +269,7 @@ def writeCppEnums(groups, fp, namespace, headers, headerGuard):
 
   def compileEnum(enum):
     def toEnumValue(v):
-      reserved_words = ['return', 'bool', 'true', 'false', 'byte', 'long', 'int', 'short', 'char', 'float', 'double', 'unsigned_byte', 'unsigned_short', 'unsigned_int']
+      reserved_words = ['return', 'bool', 'true', 'false', 'byte', 'long', 'int', 'short', 'char', 'float', 'double', 'unsigned_byte', 'unsigned_short', 'unsigned_int', 'and', 'or', 'xor', 'not']
       val = v[3:] if v.startswith('GL_') else v
       val = val.lower()
       val = val + '_' if val in reserved_words else val
@@ -280,7 +280,7 @@ def writeCppEnums(groups, fp, namespace, headers, headerGuard):
 
   # todo: incorporate 'bitmask' tag from enum collection?
   def compileGroup(group):
-    content = ''.join([compileEnum(e) for e in sorted(group.enums, key=lambda e: e.value)])
+    content = ''.join([compileEnum(e) for e in sorted(group.enums, key=lambda e: (e.value, e.name))])
     vars = group.toDictionary()
     glname = vars['name']
     vars['content'] = content
@@ -355,7 +355,7 @@ def writeCppExtCommandsHeader(commands, fp, namespace, headers, headerGuard):
   def compileCommand(command, extensions):
     parameters = ', '.join([_compileParameter(p) for p in command.parameters])
     vars = command.toDictionary()
-    vars['REQUIRED_EXTENSIONS'] = extensions
+    vars['REQUIRED_EXTENSIONS'] = sorted(extensions, key=lambda e: e.name)
     vars['name'] = toFunctionName(vars['name'])
     vars['parameter_list'] = parameters
     vars['return_type'] = toTypeName(command.returntype) if not command.returngroup else getGroupEnumName(command.returngroup)
@@ -391,7 +391,7 @@ def writeCppExtCommandsCpp(apis, commands, fp, namespace, headers, sysHeaders):
     parameters = ', '.join([_compileParameter(p) for p in command.parameters])
     arguments = ', '.join([_compileArgument(p) for p in command.parameters])
     vars = command.toDictionary()
-    vars['REQUIRED_EXTENSIONS'] = filterExtensions(extensions)
+    vars['REQUIRED_EXTENSIONS'] = sorted(filterExtensions(extensions), key=lambda e: e.name)
     vars['gl_name'] = vars['name']
     vars['name'] = toFunctionName(vars['name'])
     vars['parameter_list'] = parameters
@@ -461,7 +461,7 @@ def writeCppExtSynthCommandsCpp(synthExtCommandsByBaseCommand, fp, namespace, he
     parameters = ', '.join([_compileParameter(p) for p in command.parameters])
     arguments = ', '.join([_compileArgument(p) for p in command.parameters])
     vars = command.toDictionary()
-    vars['REQUIRED_EXTENSIONS'] = extensions
+    vars['REQUIRED_EXTENSIONS'] = sorted(extensions, key=lambda e: e.name)
     vars['gl_name'] = vars['name']
     vars['name'] = toFunctionName(vars['name'])
     vars['parameter_list'] = parameters
