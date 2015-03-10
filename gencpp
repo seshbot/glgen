@@ -1,14 +1,17 @@
 #!/bin/bash
 
-mkdir -p build/lib/include/glpp
-mkdir -p build/lib/src/gl2
-mkdir -p build/lib/src/gles2
+DEST_ROOT=../glpp/
+# DEST_ROOT=build/lib/
 
-cp assets/cpp/include/* build/lib/include/glpp/
-cp assets/cpp/src/common/* build/lib/src/gles2/
-cp assets/cpp/src/gles2/* build/lib/src/gles2/
-cp assets/cpp/src/common/* build/lib/src/gl2/
-cp assets/cpp/src/gl2/* build/lib/src/gl2/
+mkdir -p ${DEST_ROOT}/include/glpp
+mkdir -p ${DEST_ROOT}/src/gl2
+mkdir -p ${DEST_ROOT}/src/gles2
 
-python src/gen.py assets/gl.xml -p assets/gl-patch.xml -o build/lib/ --includesubdir include/glpp --sourcesubdir src --namespace gles2 --force --cpp --es2only
-python src/gen.py assets/gl.xml -p assets/gl-patch.xml -o build/lib/ --includesubdir include/glpp --sourcesubdir src --namespace gl2 --force --cpp --gl2only
+cp assets/cpp/include/* ${DEST_ROOT}/include/glpp/
+cp assets/cpp/src/common/* ${DEST_ROOT}/src/gles2/
+cp assets/cpp/src/gles2/* ${DEST_ROOT}/src/gles2/
+cp assets/cpp/src/common/* ${DEST_ROOT}src/gl2/
+cp assets/cpp/src/gl2/* ${DEST_ROOT}/src/gl2/
+
+python src/gen.py assets/gl.xml -p assets/gl-patch.xml -o ${DEST_ROOT} --includesubdir include/glpp --sourcesubdir src --namespace gles2 --force --cpp --es2only
+python src/gen.py assets/gl.xml -p assets/gl-patch.xml -o ${DEST_ROOT} --includesubdir include/glpp --sourcesubdir src --namespace gl2 --force --cpp --gl2only
