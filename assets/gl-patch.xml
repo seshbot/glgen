@@ -109,7 +109,35 @@ with a newer version with impunity.
       <enum name="GL_RGBA"/>
 
       <enum name="GL_BGRA_EXT"/>
+      <enum name="GL_DEPTH_COMPONENT"/>
+      <enum name="GL_DEPTH_STENCIL_OES"/>
     </group>
+    <group name="PixelFormat" comment="used by glTexImage2D">
+      <enum name="GL_ABGR_EXT"/>
+      <enum name="GL_ALPHA"/>
+      <enum name="GL_BLUE"/>
+      <enum name="GL_CMYKA_EXT"/>
+      <enum name="GL_CMYK_EXT"/>
+      <enum name="GL_COLOR_INDEX"/>
+      <enum name="GL_DEPTH_COMPONENT"/>
+      <enum name="GL_GREEN"/>
+      <enum name="GL_LUMINANCE"/>
+      <enum name="GL_LUMINANCE_ALPHA"/>
+      <enum name="GL_RED"/>
+      <enum name="GL_RED_EXT"/>
+      <enum name="GL_RGB"/>
+      <enum name="GL_RGBA"/>
+      <enum name="GL_STENCIL_INDEX"/>
+      <enum name="GL_UNSIGNED_INT"/>
+      <enum name="GL_UNSIGNED_SHORT"/>
+      <enum name="GL_YCRCB_422_SGIX"/>
+      <enum name="GL_YCRCB_444_SGIX"/>
+
+      <enum name="GL_BGRA_EXT"/>
+      <enum name="GL_DEPTH_COMPONENT"/>
+      <enum name="GL_DEPTH_STENCIL_OES"/>
+    </group>
+
     <group name="TextureUnit" comment="used by glActiveTexture">
       <enum name="GL_TEXTURE0"/>
       <enum name="GL_TEXTURE1"/>
@@ -491,6 +519,7 @@ with a newer version with impunity.
       <enum name="GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT"/>
       <enum name="GL_FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT"/>
       <enum name="GL_FRAMEBUFFER_INCOMPLETE_DRAW_BUFFER"/>
+      <enum name="GL_FRAMEBUFFER_INCOMPLETE_DIMENSIONS"/>
       <enum name="GL_FRAMEBUFFER_UNSUPPORTED"/>
       <enum name="GL_FRAMEBUFFER_INCOMPLETE_MULTISAMPLE"/>
       <enum name="GL_FRAMEBUFFER_INCOMPLETE_LAYER_TARGETS"/>
@@ -521,6 +550,51 @@ with a newer version with impunity.
       <enum name="GL_TEXTURE_CUBE_MAP_NEGATIVE_Y"/>
       <enum name="GL_TEXTURE_CUBE_MAP_POSITIVE_Z"/>
       <enum name="GL_TEXTURE_CUBE_MAP_NEGATIVE_Z"/>
+    </group>
+
+    <!-- this was somehow missing GL_TEXTURE_CUBE_MAP -->
+    <group name="TextureTarget">
+      <enum name="GL_DETAIL_TEXTURE_2D_SGIS"/>
+      <enum name="GL_PROXY_TEXTURE_1D"/>
+      <enum name="GL_PROXY_TEXTURE_1D_EXT"/>
+      <enum name="GL_PROXY_TEXTURE_2D"/>
+      <enum name="GL_PROXY_TEXTURE_2D_EXT"/>
+      <enum name="GL_PROXY_TEXTURE_3D"/>
+      <enum name="GL_PROXY_TEXTURE_3D_EXT"/>
+      <enum name="GL_PROXY_TEXTURE_4D_SGIS"/>
+      <enum name="GL_TEXTURE_1D"/>
+      <enum name="GL_TEXTURE_2D"/>
+      <enum name="GL_TEXTURE_CUBE_MAP"/> <!-- added here -->
+      <enum name="GL_TEXTURE_3D"/>
+      <enum name="GL_TEXTURE_3D_EXT"/>
+      <enum name="GL_TEXTURE_3D_OES"/>
+      <enum name="GL_TEXTURE_4D_SGIS"/>
+      <enum name="GL_TEXTURE_BASE_LEVEL"/>
+      <enum name="GL_TEXTURE_BASE_LEVEL_SGIS"/>
+      <enum name="GL_TEXTURE_MAX_LEVEL"/>
+      <enum name="GL_TEXTURE_MAX_LEVEL_SGIS"/>
+      <enum name="GL_TEXTURE_MAX_LOD"/>
+      <enum name="GL_TEXTURE_MAX_LOD_SGIS"/>
+      <enum name="GL_TEXTURE_MIN_LOD"/>
+      <enum name="GL_TEXTURE_MIN_LOD_SGIS"/>
+    </group>
+
+    <!-- created to replace TextureTarget for glBindTexture -->
+    <!-- TODO: should this totally replace TextureTarget? only used by glGetTexParameter -->
+    <group name="TextureImageTarget">
+      <enum name="GL_TEXTURE_2D"/>
+      <enum name="GL_PROXY_TEXTURE_2D"/>
+      <enum name="GL_TEXTURE_1D_ARRAY"/>
+      <enum name="GL_PROXY_TEXTURE_1D_ARRAY"/>
+      <enum name="GL_TEXTURE_RECTANGLE"/>
+      <enum name="GL_PROXY_TEXTURE_RECTANGLE"/>
+      <enum name="GL_TEXTURE_CUBE_MAP_POSITIVE_X"/>
+      <enum name="GL_TEXTURE_CUBE_MAP_NEGATIVE_X"/>
+      <enum name="GL_TEXTURE_CUBE_MAP_POSITIVE_Y"/>
+      <enum name="GL_TEXTURE_CUBE_MAP_NEGATIVE_Y"/>
+      <enum name="GL_TEXTURE_CUBE_MAP_POSITIVE_Z"/>
+      <enum name="GL_TEXTURE_CUBE_MAP_NEGATIVE_Z"/>
+      <enum name="GL_PROXY_TEXTURE_CUBE_MAP"/>
     </group>
   </groups>
 
@@ -572,6 +646,22 @@ with a newer version with impunity.
       <proto group="FramebufferStatus"><ptype>GLenum</ptype> <name>glCheckFramebufferStatus</name></proto>
       <param group="FramebufferTarget"><ptype>GLenum</ptype> <name>target</name></param>
       <glx type="vendor" opcode="1427"/>
+    </command>
+
+    <!-- replaced TextureTarget with the new TextureImageTarget -->
+    <command>
+      <proto>void <name>glTexImage2D</name></proto>
+      <param group="TextureImageTarget"><ptype>GLenum</ptype> <name>target</name></param>
+      <param group="CheckedInt32"><ptype>GLint</ptype> <name>level</name></param>
+      <param group="TextureComponentCount"><ptype>GLint</ptype> <name>internalformat</name></param>
+      <param><ptype>GLsizei</ptype> <name>width</name></param>
+      <param><ptype>GLsizei</ptype> <name>height</name></param>
+      <param group="CheckedInt32"><ptype>GLint</ptype> <name>border</name></param>
+      <param group="PixelFormat"><ptype>GLenum</ptype> <name>format</name></param>
+      <param group="PixelType"><ptype>GLenum</ptype> <name>type</name></param>
+      <param len="COMPSIZE(format,type,width,height)">const void *<name>pixels</name></param>
+      <glx type="render" opcode="110"/>
+      <glx type="render" opcode="329" name="glTexImage2DPBO" comment="PBO protocol"/>
     </command>
 
     <!-- used by gles2 extensions -->
