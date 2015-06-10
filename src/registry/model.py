@@ -151,11 +151,19 @@ class Parameter:
       data['group'] = self.group.id
     return data
 
+_EXTENSION_SUFFIXES_ = [ 'EXT', 'ARB', 'OES', 'ANGLE', 'AMD', 'NV', 'QCOM', 'KHR', 'APPLE' ]
+def removeSuffix(name, defaultSuffix=""):
+  for suffix in _EXTENSION_SUFFIXES_:
+    if name.endswith(suffix):
+      return name[:-len(suffix)]
+  return name + defaultSuffix
 
 class Command:
   def __init__(self, data, id):
+
     self.id = id
     self.name = data.name
+    self.basename = removeSuffix(data.name)
     self.data = data
 
     self.returngroup = None
@@ -172,6 +180,7 @@ class Command:
     data = {}
     data['id'] = self.id
     data['name'] = self.name
+    data['basename'] = self.basename
 
     data['features'] = map(lambda f: f.id, self.features)
     data['parameters'] = map(lambda p: p.id, self.parameters)
@@ -184,7 +193,6 @@ class Command:
 
 class Registry:
   def __init__(self, xmlFeatures, xmlExtensions, xmlEnums, xmlGroups, xmlCommands, filterApiName=None, filterApiNumber=None, synth=False):
-    self.EXTENSION_SUFFIXES = [ 'EXT', 'ARB', 'OES', 'ANGLE', 'AMD', 'NV', 'QCOM', 'KHR', 'APPLE' ]
 
     print('creating registry...')
     #
@@ -386,7 +394,7 @@ class Registry:
           if baseCommand:
             c.parameters = mergeParams(c.parameters, baseCommand.parameters)
 
-      for ext in self.EXTENSION_SUFFIXES:
+      for ext in _EXTENSION_SUFFIXES_:
         fixExtCommand(ext)
 
     print(' - fixing group features and extensions based on commands and params...')
@@ -460,11 +468,6 @@ class Registry:
 
     if synth:
       print(' - synthesising base commands from extension commands...')
-      def removeSuffix(name):
-        for suffix in self.EXTENSION_SUFFIXES:
-          if name.endswith(suffix):
-            return name[:-len(suffix)]
-        return name + '-ERROR-UNRECOGNISED-SUFFIX'
 
       def matchingExtCommands(baseCommandName, extCommands):
         if baseCommandName not in self.commandsByName:
@@ -487,7 +490,7 @@ class Registry:
 
       extensionCommandsByBaseName = {}
       for c in self.extCommands:
-        baseName = removeSuffix(c.name)
+        baseName = removeSuffix(c.name, '-ERROR-UNRECOGNISED-SUFFIX')
         if baseName not in extensionCommandsByBaseName:
           extensionCommandsByBaseName[baseName] = []
         extensionCommandsByBaseName[baseName].append(c)

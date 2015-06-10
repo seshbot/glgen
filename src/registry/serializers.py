@@ -47,9 +47,9 @@ HEADER_TEMPLATE = """\
 {{'\\n'.join(['#include <%s>' % h for h in SYSTEM_HEADERS]) if 'SYSTEM_HEADERS' in locals() else ''}}
 {{'\\n'.join(['#include "%s"' % h for h in LOCAL_HEADERS]) if 'LOCAL_HEADERS' in locals() else ''}}
 
-namespace ${NAMESPACE} {
+{{'\\n'.join('namespace %s {' % n for n in namespaces)}}
 ${CONTENT}
-} // namespace ${NAMESPACE}
+{{'\\n'.join('} // namespace %s' % n for n in reversed(namespaces))}}
 
 #endif // #ifndef ${HEADER_GUARD}
 """
@@ -63,9 +63,9 @@ CPP_TEMPLATE = """\
 {{'\\n'.join(['#include <%s>' % h for h in SYSTEM_HEADERS]) if 'SYSTEM_HEADERS' in locals() else ''}}
 {{'\\n'.join(['#include "%s"' % h for h in LOCAL_HEADERS]) if 'LOCAL_HEADERS' in locals() else ''}}
 
-namespace ${NAMESPACE} {
+{{'\\n'.join('namespace %s {' % n for n in namespaces)}}
 ${CONTENT}
-}
+{{'\\n'.join('} // namespace %s' % n for n in reversed(namespaces))}}
 """
 
 ENUM_CLASS_TEMPLATE = """\
@@ -264,7 +264,7 @@ def _compileArgument(param):
     return 'static_cast<%s>(%s)' % (param.type, paramName)
   return paramName
 
-def writeCppEnums(groups, fp, namespace, headers, headerGuard):
+def writeCppEnums(groups, fp, namespaces, headers, headerGuard):
   GROUPS_TO_IGNORE = ['Boolean']
 
   def compileEnum(enum):
@@ -292,7 +292,7 @@ def writeCppEnums(groups, fp, namespace, headers, headerGuard):
   content = '\n'.join([compileGroup(g) for g in groups if g.name not in GROUPS_TO_IGNORE])
 
   vars = {
-    'namespace': namespace,
+    'namespaces': namespaces,
     'content': content,
     'header_guard': headerGuard,
     'LOCAL_HEADERS': headers,
@@ -301,7 +301,7 @@ def writeCppEnums(groups, fp, namespace, headers, headerGuard):
   fp.write(compileTemplate(HEADER_TEMPLATE, vars))
 
 
-def writeCppCommandsHeader(commands, fp, namespace, headers, headerGuard):
+def writeCppCommandsHeader(commands, fp, namespaces, headers, headerGuard):
   def compileCommand(command):
     parameters = ', '.join([_compileParameter(p) for p in command.parameters])
     vars = command.toDictionary()
@@ -314,7 +314,7 @@ def writeCppCommandsHeader(commands, fp, namespace, headers, headerGuard):
   content = '\n'.join([compileCommand(c) for c in commands])
 
   vars = {
-    'namespace': namespace,
+    'namespaces': namespaces,
     'content': content,
     'header_guard': headerGuard,
     'LOCAL_HEADERS': headers,
@@ -322,7 +322,7 @@ def writeCppCommandsHeader(commands, fp, namespace, headers, headerGuard):
 
   fp.write(compileTemplate(HEADER_TEMPLATE, vars))
 
-def writeCppCommandsCpp(commands, fp, namespace, headers, sysHeaders):
+def writeCppCommandsCpp(commands, fp, namespaces, headers, sysHeaders):
   def compileCommand(command):
     parameters = ', '.join([_compileParameter(p) for p in command.parameters])
     arguments = ', '.join([_compileArgument(p) for p in command.parameters])
@@ -343,7 +343,7 @@ def writeCppCommandsCpp(commands, fp, namespace, headers, sysHeaders):
   content = '\n'.join([compileCommand(c) for c in commands])
 
   vars = {
-    'namespace': namespace,
+    'namespaces': namespaces,
     'content': content,
     'LOCAL_HEADERS': headers,
     'SYSTEM_HEADERS': sysHeaders
@@ -351,30 +351,48 @@ def writeCppCommandsCpp(commands, fp, namespace, headers, sysHeaders):
 
   fp.write(compileTemplate(CPP_TEMPLATE, vars))
 
-def writeCppExtCommandsHeader(commands, fp, namespace, headers, headerGuard):
-  def compileCommand(command, extensions):
+ALIAS_SECTION_HEADER = """
+   /**
+    * command aliases
+    */
+  
+"""
+
+EXTENSION_SECTION_HEADER = """
+   /**
+    * non-aliased commands
+    */
+  
+"""
+
+def _sortCommandsByExtensions(cs):
+  def calculateCommandExtensionsHash(c):
+    sortedExtensionNames = sorted(list(map(lambda e: e.name, c.extensions)))
+    return '-'.join(sortedExtensionNames) + '-' + c.name
+  return sorted(cs, key=calculateCommandExtensionsHash)
+
+def writeCppExtCommandsHeader(commands, fp, namespaces, headers, headerGuard):
+  def compileCommand(command, extensions, usealias):
     parameters = ', '.join([_compileParameter(p) for p in command.parameters])
     vars = command.toDictionary()
     vars['REQUIRED_EXTENSIONS'] = sorted(extensions, key=lambda e: e.name)
-    vars['name'] = toFunctionName(vars['name'])
+    vars['name'] = toFunctionName(vars['basename']) if usealias else toFunctionName(vars['name'])
     vars['parameter_list'] = parameters
     vars['return_type'] = toTypeName(command.returntype) if not command.returngroup else getGroupEnumName(command.returngroup)
     return compileTemplate(EXT_COMMAND_PROTOTYPE_TEMPLATE, vars)
 
-  commandsByExtensions = {}
-  for c in commands:
-    sortedExtensionNames = sorted(list(map(lambda e: e.name, c.extensions)))
-    extensionNamesHash = ', '.join(sortedExtensionNames)
-    if extensionNamesHash not in commandsByExtensions:
-      commandsByExtensions[extensionNamesHash] = []
-    commandsByExtensions[extensionNamesHash].append(c)
+  commandContent = '\n'.join([compileCommand(c, c.extensions, False) for c in _sortCommandsByExtensions(commands)])
 
-  sortedCommands = [c for cs in commandsByExtensions.values() for c in cs]
+  baseCommandNames = {c.name for c in commands if c.name == c.basename}
+  commandsByBaseName = {c.basename: c for c in commands if c.name not in baseCommandNames}
+  commandsToAlias = commandsByBaseName.values()
 
-  content = '\n'.join([compileCommand(c, c.extensions) for c in sortedCommands])
+  aliasContent = '\n'.join([compileCommand(c, c.extensions, True) for c in _sortCommandsByExtensions(commandsToAlias)])
+
+  content = ALIAS_SECTION_HEADER + aliasContent + '\n' + EXTENSION_SECTION_HEADER + commandContent
 
   vars = {
-    'namespace': namespace,
+    'namespaces': namespaces,
     'content': content,
     'header_guard': headerGuard,
     'LOCAL_HEADERS': headers,
@@ -382,18 +400,18 @@ def writeCppExtCommandsHeader(commands, fp, namespace, headers, headerGuard):
 
   fp.write(compileTemplate(HEADER_TEMPLATE, vars))
 
-def writeCppExtCommandsCpp(apis, commands, fp, namespace, headers, sysHeaders):
+def writeCppExtCommandsCpp(apis, commands, fp, namespaces, headers, sysHeaders):
   def filterExtensions(es):
     # extensions that contribute to any of the given apis
     return [e for e in es if e.apis & apis]
 
-  def compileCommand(command, extensions):
+  def compileCommand(command, extensions, usealias):
     parameters = ', '.join([_compileParameter(p) for p in command.parameters])
     arguments = ', '.join([_compileArgument(p) for p in command.parameters])
     vars = command.toDictionary()
     vars['REQUIRED_EXTENSIONS'] = sorted(filterExtensions(extensions), key=lambda e: e.name)
     vars['gl_name'] = vars['name']
-    vars['name'] = toFunctionName(vars['name'])
+    vars['name'] = toFunctionName(vars['basename']) if usealias else toFunctionName(vars['name'])
     vars['parameter_list'] = parameters
     vars['argument_list'] = arguments
     vars['return_type'] = toTypeName(command.returntype) if not command.returngroup else getGroupEnumName(command.returngroup)
@@ -404,10 +422,18 @@ def writeCppExtCommandsCpp(apis, commands, fp, namespace, headers, sysHeaders):
     vars['param_types'] = {p.name: getBaseTypeString(p) for p in command.parameters}
     return compileTemplate(EXT_COMMAND_IMPLEMENTATION_TEMPLATE, vars)
 
-  content = '\n'.join([compileCommand(c, c.extensions) for c in commands])
+  commandContent = '\n'.join([compileCommand(c, c.extensions, False) for c in _sortCommandsByExtensions(commands)])
+
+  baseCommandNames = {c.name for c in commands if c.name == c.basename}
+  commandsByBaseName = {c.basename: c for c in commands if c.name not in baseCommandNames}
+  commandsToAlias = commandsByBaseName.values()
+
+  aliasContent = '\n'.join([compileCommand(c, c.extensions, True) for c in _sortCommandsByExtensions(commandsToAlias)])
+
+  content = ALIAS_SECTION_HEADER + aliasContent + '\n' + EXTENSION_SECTION_HEADER + commandContent
 
   vars = {
-    'namespace': namespace,
+    'namespaces': namespaces,
     'content': content,
     'LOCAL_HEADERS': headers,
     'SYSTEM_HEADERS': sysHeaders
@@ -416,7 +442,7 @@ def writeCppExtCommandsCpp(apis, commands, fp, namespace, headers, sysHeaders):
   fp.write(compileTemplate(CPP_TEMPLATE, vars))
 
 
-def writeCppExtSynthCommandsHeader(synthExtCommandsByBaseCommand, fp, namespace, headers, headerGuard):
+def writeCppExtSynthCommandsHeader(synthExtCommandsByBaseCommand, fp, namespaces, headers, headerGuard):
   baseCommands = synthExtCommandsByBaseCommand.keys()
 
   def compileCommand(command, extensions):
@@ -446,7 +472,7 @@ def writeCppExtSynthCommandsHeader(synthExtCommandsByBaseCommand, fp, namespace,
   content = '\n'.join([compileCommand(c, derivedExtensionsForCommand(c)) for c in sortedCommands])
 
   vars = {
-    'namespace': namespace,
+    'namespaces': namespaces,
     'content': content,
     'header_guard': headerGuard,
     'LOCAL_HEADERS': headers,
@@ -454,7 +480,7 @@ def writeCppExtSynthCommandsHeader(synthExtCommandsByBaseCommand, fp, namespace,
 
   fp.write(compileTemplate(HEADER_TEMPLATE, vars))
 
-def writeCppExtSynthCommandsCpp(synthExtCommandsByBaseCommand, fp, namespace, headers, sysHeaders):
+def writeCppExtSynthCommandsCpp(synthExtCommandsByBaseCommand, fp, namespaces, headers, sysHeaders):
   baseCommands = synthExtCommandsByBaseCommand.keys()
 
   def compileCommand(command, extensions):
@@ -482,7 +508,7 @@ def writeCppExtSynthCommandsCpp(synthExtCommandsByBaseCommand, fp, namespace, he
   content = '\n'.join([compileCommand(c, derivedExtensionsForCommand(c)) for c in baseCommands])
 
   vars = {
-    'namespace': namespace,
+    'namespaces': namespaces,
     'content': content,
     'LOCAL_HEADERS': headers,
     'SYSTEM_HEADERS': sysHeaders
