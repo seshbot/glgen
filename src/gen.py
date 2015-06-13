@@ -383,17 +383,17 @@ if __name__ == '__main__':
       writeCppCommandsCpp(registry.coreCommands, fp, namespaces, [], ['glad/glad.h', 'string.h', getHeaderInclude('commands.h')])
       fp.close
 
-      filename = os.path.join(headerpath, 'extensions.h')
-      print 'writing %s' % filename
-      fp = open(filename, 'w')
-      writeCppExtCommandsHeader(registry.extCommands, fp, namespaces, ['../types.h', 'enums.h', 'extensions_enums.h'], 'EXTENSIONS__H')
-      fp.close
+      # filename = os.path.join(headerpath, 'extensions.h')
+      # print 'writing %s' % filename
+      # fp = open(filename, 'w')
+      # writeCppExtCommandsHeader(registry.extCommands, fp, namespaces, ['../types.h', 'enums.h', 'extensions_enums.h'], 'EXTENSIONS__H')
+      # fp.close
 
-      filename = os.path.join(sourcepath, 'extensions.cpp')
-      print 'writing %s' % filename
-      fp = open(filename, 'w')
-      writeCppExtCommandsCpp(apis, registry.extCommands, fp, namespaces, [], ['glad/glad.h', 'stdexcept', getHeaderInclude('extensions.h')])
-      fp.close
+      # filename = os.path.join(sourcepath, 'extensions.cpp')
+      # print 'writing %s' % filename
+      # fp = open(filename, 'w')
+      # writeCppExtCommandsCpp(apis, registry.extCommands, fp, namespaces, [], ['glad/glad.h', 'stdexcept', getHeaderInclude('extensions.h')])
+      # fp.close
 
 
       # filename = os.path.join(headerpath, 'extension_synth.h')
