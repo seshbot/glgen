@@ -71,6 +71,8 @@ if __name__ == '__main__':
   parser.add_argument('-i', '--includesubdir', help='sub-directory into which output header files are dumped')
   parser.add_argument('-s', '--sourcesubdir', help='sub-directory into which output source files are dumped')
   parser.add_argument('--namespace', default='gl', help='C++ namespace into which all symbols will be placed')
+  parser.add_argument('--extensionsimportfile', help='generate extension commands from extensions listed in given file')
+  parser.add_argument('--extensionsoutputfilename', help='')
   parser.add_argument('-j', '--json', action='store_true')
   parser.add_argument('-c', '--cpp', action='store_true')
   parser.add_argument('--verify', action='store_true')
@@ -80,7 +82,7 @@ if __name__ == '__main__':
   parser.add_argument('regfile', help='XML registry file')
 
   args = parser.parse_args()
-
+  
   genJson = args.json
   genCpp = args.cpp
   if not genCpp and not genJson:
@@ -88,7 +90,7 @@ if __name__ == '__main__':
     genCpp = True
 
   inputfile = args.regfile # os.path.join(os.path.dirname(__file__), 'gl.xml')
-  outputpath = args.outputdir  
+  outputpath = args.outputdir
 
   checkDirExists(outputpath, args.force)
 
@@ -157,42 +159,46 @@ if __name__ == '__main__':
   #   print ' %s commands: %s' % (f.name, sorted([c.name for c in f.requiredCommands]))
   # sys.exit(1)
 
-  angleExtensions = set([
-    'GL_OES_element_index_uint',
-    'GL_OES_get_program_binary',
-    'GL_OES_packed_depth_stencil',
-    'GL_OES_rgb8_rgba8',
-    'GL_OES_standard_derivatives',
-    'GL_OES_texture_half_float',
-    'GL_OES_texture_half_float_linear',
-    'GL_OES_texture_float',
-    'GL_OES_texture_float_linear',
-    'GL_OES_texture_npot',
-    'GL_EXT_occlusion_query_boolean',
-    'GL_EXT_read_format_bgra',
-    'GL_EXT_robustness',
-    'GL_EXT_texture_compression_dxt1',
-    'GL_EXT_texture_filter_anisotropic',
-    'GL_EXT_texture_format_BGRA8888',
-    'GL_EXT_texture_storage',
-    'GL_ANGLE_depth_texture',
-    'GL_ANGLE_framebuffer_blit',
-    'GL_ANGLE_framebuffer_multisample',
-    'GL_ANGLE_instanced_arrays',
-    'GL_ANGLE_pack_reverse_row_order',
-    'GL_ANGLE_texture_compression_dxt3',
-    'GL_ANGLE_texture_compression_dxt5',
-    'GL_ANGLE_texture_usage',
-    'GL_ANGLE_translated_shader_source',
-    'GL_NV_fence',
+  # angleExtensions = set([
 
-    'EGL_EXT_create_context_robustness',
-    'EGL_ANGLE_d3d_share_handle_client_buffer',
-    'EGL_ANGLE_query_surface_pointer',
-    'EGL_ANGLE_software_display',
-    'EGL_ANGLE_surface_d3d_texture_2d_share_handle',
-    'EGL_NV_post_sub_buffer',]
-  )
+  #   'GL_OES_element_index_uint',
+  #   'GL_OES_packed_depth_stencil',
+  #   'GL_OES_get_program_binary',
+  #   'GL_OES_rgb8_rgba8',
+  #   'GL_EXT_texture_format_BGRA8888',
+  #   'GL_EXT_read_format_bgra',
+  #   'GL_NV_pixel_buffer_object',
+  #   'GL_OES_mapbuffer',
+  #   'GL_EXT_map_buffer_range',
+  #   'GL_OES_texture_half_float',
+  #   'GL_OES_texture_half_float_linear',
+  #   'GL_OES_texture_float',
+  #   'GL_OES_texture_float_linear',
+  #   'GL_EXT_texture_rg',
+  #   'GL_EXT_texture_compression_dxt1',
+  #   'GL_ANGLE_texture_compression_dxt3',
+  #   'GL_ANGLE_texture_compression_dxt5',
+  #   'GL_EXT_sRGB',
+  #   'GL_ANGLE_depth_texture',
+  #   'GL_EXT_texture_storage',
+  #   'GL_OES_texture_npot',
+  #   'GL_EXT_draw_buffers',
+  #   'GL_EXT_texture_filter_anisotropic',
+  #   'GL_EXT_occlusion_query_boolean',
+  #   'GL_NV_fence',
+  #   'GL_EXT_robustness',
+  #   'GL_EXT_blend_minmax',
+  #   'GL_ANGLE_framebuffer_blit',
+  #   'GL_ANGLE_framebuffer_multisample',
+  #   'GL_ANGLE_instanced_arrays',
+  #   'GL_ANGLE_pack_reverse_row_order',
+  #   'GL_OES_standard_derivatives',
+  #   'GL_EXT_shader_texture_lod',
+  #   'GL_EXT_frag_depth',
+  #   'GL_ANGLE_texture_usage',
+  #   'GL_ANGLE_translated_shader_source',
+  #   ]
+  # )
 
 
   # # exploring extensions
@@ -218,7 +224,7 @@ if __name__ == '__main__':
   # print '\n\nall gles2 extensions:'
   # for e in es2Api.extensions:
   #   angleIndicator = 'x' if e.name in angleExtensions else ''
-  #   print ' - %s %s' % (e.name, angleIndicator)
+  #   print ' - "%s" %s.' % (e.name, angleIndicator)
 
   # sys.exit(1)
 
@@ -282,7 +288,6 @@ if __name__ == '__main__':
     #   diff = expanded_enum_names - enum_names
     #   print '               diff: %s' % diff
 
-  # TODO: extensions
   # TODO: aliases
   # TODO: investigate '<require comment="Reuse ARB_copy_buffer">' etc
 
@@ -308,11 +313,11 @@ if __name__ == '__main__':
     fp.close
 
   if genCpp:
-    namespace = args.namespace
+    namespaces = args.namespace.split(':')
     includeSubdir = args.includesubdir if args.includesubdir else 'include'
     sourceSubdir = args.sourcesubdir if args.sourcesubdir else 'src'
-    headerpath = os.path.join(outputpath, includeSubdir, namespace)
-    sourcepath = os.path.join(outputpath, sourceSubdir, namespace)
+    headerpath = os.path.join(outputpath, includeSubdir, '/'.join(namespaces))
+    sourcepath = os.path.join(outputpath, sourceSubdir, '/'.join(namespaces))
 
     def getHeaderInclude(headerfile):
       filename = os.path.join(headerpath, headerfile)
@@ -325,52 +330,85 @@ if __name__ == '__main__':
     checkDirExists(headerpath, args.force)
     checkDirExists(sourcepath, args.force)
 
-    filename = os.path.join(headerpath, 'enums.h')
-    print 'writing %s' % filename
-    fp = open(filename, 'w')
-    writeCppEnums(registry.coreGroups, fp, namespace, ['../types.h'], 'ENUMS__H')
-    fp.close
+    def listToHeaderGuard(ss, postfix):
+      return '_'.join(s.upper() for s in ss) + postfix
 
-    filename = os.path.join(headerpath, 'extensions_enums.h')
-    print 'writing %s' % filename
-    fp = open(filename, 'w')
-    writeCppEnums(registry.extGroups, fp, namespace, ['../types.h'], 'EXTENSIONS_ENUMS__H')
-    fp.close
+    if args.extensionsimportfile:
+      extensionsToGenerate = []
+      if args.extensionsimportfile:
+        def parse(str):
+          withoutComments = str.split('#')[0]
+          return withoutComments.strip()
+        extensionsToGenerate = [parse(line) for line in open(args.extensionsimportfile) if parse(str) != '']
 
-    filename = os.path.join(headerpath, 'commands.h')
-    print 'writing %s' % filename
-    fp = open(filename, 'w')
-    writeCppCommandsHeader(registry.coreCommands, fp, namespace, ['../types.h', 'enums.h'], 'COMMANDS__H')
-    fp.close
+      extensionsToGenerateSet = set(extensionsToGenerate)
+      extensions = {e for e in registry.extensions if e.name in extensionsToGenerateSet}
 
-    filename = os.path.join(sourcepath, 'commands.cpp')
-    print 'writing %s' % filename
-    fp = open(filename, 'w')
-    writeCppCommandsCpp(registry.coreCommands, fp, namespace, [], ['glad/glad.h', 'string.h', getHeaderInclude('commands.h')])
-    fp.close
+      extensionCommands = {c for e in extensions for c in e.requiredCommands}
 
-    filename = os.path.join(headerpath, 'extensions.h')
-    print 'writing %s' % filename
-    fp = open(filename, 'w')
-    writeCppExtCommandsHeader(registry.extCommands, fp, namespace, ['../types.h', 'enums.h', 'extensions_enums.h'], 'EXTENSIONS__H')
-    fp.close
+      extensionsOutputFile = args.extensionsoutputfilename if args.extensionsoutputfilename else 'ext'
+      print 'writing %s commands from %s extensions to %s .h/.cpp' % (len(extensionCommands), len(extensions), extensionsOutputFile)
 
-    filename = os.path.join(sourcepath, 'extensions.cpp')
-    print 'writing %s' % filename
-    fp = open(filename, 'w')
-    writeCppExtCommandsCpp(apis, registry.extCommands, fp, namespace, [], ['glad/glad.h', 'stdexcept', getHeaderInclude('extensions.h')])
-    fp.close
+      filename = os.path.join(headerpath, extensionsOutputFile + '.h')
+      print 'writing %s' % filename
+      fp = open(filename, 'w')
+      writeCppExtCommandsHeader(extensionCommands, fp, namespaces, ['../../types.h', '../enums.h', '../extensions_enums.h'], listToHeaderGuard(namespaces, '_EXTENSIONS__H'))
+      fp.close
 
-    # filename = os.path.join(headerpath, 'extension_synth.h')
-    # print 'writing %s' % filename
-    # fp = open(filename, 'w')
-    # writeCppExtSynthCommandsHeader(registry.synthExtCommandsByBaseCommand, fp, namespace, ['../types.h', 'enums.h', 'extensions_enums.h'], 'EXTENSION_SYNTH__H')
-    # fp.close
+      filename = os.path.join(sourcepath, extensionsOutputFile + '.cpp')
+      print 'writing %s' % filename
+      fp = open(filename, 'w')
+      writeCppExtCommandsCpp(apis, extensionCommands, fp, namespaces, [], ['glad/glad.h', 'stdexcept', getHeaderInclude('extensions.h')])
+      fp.close
 
-    # filename = os.path.join(sourcepath, 'extension_synth.cpp')
-    # print 'writing %s' % filename
-    # fp = open(filename, 'w')
-    # writeCppExtSynthCommandsCpp(registry.synthExtCommandsByBaseCommand, fp, namespace, ['angle_extension_macros.h'], ['stdexcept', 'GLES2/gl2.h', 'GLES2/gl2ext.h', 'glpp/gles2/extensions.h'])
-    # fp.close
+    else:
+      filename = os.path.join(headerpath, 'enums.h')
+      print 'writing %s' % filename
+      fp = open(filename, 'w')
+      writeCppEnums(registry.coreGroups, fp, namespaces, ['../types.h'], 'ENUMS__H')
+      fp.close
+
+      filename = os.path.join(headerpath, 'extensions_enums.h')
+      print 'writing %s' % filename
+      fp = open(filename, 'w')
+      writeCppEnums(registry.extGroups, fp, namespaces, ['../types.h'], 'EXTENSIONS_ENUMS__H')
+      fp.close
+
+      filename = os.path.join(headerpath, 'commands.h')
+      print 'writing %s' % filename
+      fp = open(filename, 'w')
+      writeCppCommandsHeader(registry.coreCommands, fp, namespaces, ['../types.h', 'enums.h'], 'COMMANDS__H')
+      fp.close
+
+      filename = os.path.join(sourcepath, 'commands.cpp')
+      print 'writing %s' % filename
+      fp = open(filename, 'w')
+      writeCppCommandsCpp(registry.coreCommands, fp, namespaces, [], ['glad/glad.h', 'string.h', getHeaderInclude('commands.h')])
+      fp.close
+
+      # filename = os.path.join(headerpath, 'extensions.h')
+      # print 'writing %s' % filename
+      # fp = open(filename, 'w')
+      # writeCppExtCommandsHeader(registry.extCommands, fp, namespaces, ['../types.h', 'enums.h', 'extensions_enums.h'], 'EXTENSIONS__H')
+      # fp.close
+
+      # filename = os.path.join(sourcepath, 'extensions.cpp')
+      # print 'writing %s' % filename
+      # fp = open(filename, 'w')
+      # writeCppExtCommandsCpp(apis, registry.extCommands, fp, namespaces, [], ['glad/glad.h', 'stdexcept', getHeaderInclude('extensions.h')])
+      # fp.close
+
+
+      # filename = os.path.join(headerpath, 'extension_synth.h')
+      # print 'writing %s' % filename
+      # fp = open(filename, 'w')
+      # writeCppExtSynthCommandsHeader(registry.synthExtCommandsByBaseCommand, fp, namespaces, ['../types.h', 'enums.h', 'extensions_enums.h'], 'EXTENSION_SYNTH__H')
+      # fp.close
+
+      # filename = os.path.join(sourcepath, 'extension_synth.cpp')
+      # print 'writing %s' % filename
+      # fp = open(filename, 'w')
+      # writeCppExtSynthCommandsCpp(registry.synthExtCommandsByBaseCommand, fp, namespaces, ['angle_extension_macros.h'], ['stdexcept', 'GLES2/gl2.h', 'GLES2/gl2ext.h', 'glpp/gles2/extensions.h'])
+      # fp.close
 
   sys.exit(0)

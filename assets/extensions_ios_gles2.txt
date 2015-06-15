@@ -1,0 +1,41 @@
+APPLE_copy_texture_levels
+APPLE_framebuffer_multisample
+APPLE_rgb_422
+APPLE_texture_format_BGRA8888
+APPLE_texture_max_level
+APPLE_sync
+EXT_blend_minmax
+EXT_debug_label
+EXT_debug_marker
+EXT_discard_framebuffer
+EXT_draw_instanced
+EXT_instanced_arrays
+EXT_map_buffer_range
+EXT_separate_shader_objects
+EXT_shader_framebuffer_fetch
+EXT_read_format_bgra
+EXT_shader_texture_lod
+EXT_texture_filter_anisotropic
+EXT_texture_storage
+IMG_read_format
+IMG_texture_compression_pvrtc
+OES_depth24
+OES_depth_texture
+OES_element_index_uint
+OES_fbo_render_mipmap
+OES_mapbuffer
+OES_packed_depth_stencil
+OES_rgb8_rgba8
+OES_standard_derivatives
+OES_texture_half_float
+OES_texture_float
+OES_texture_half_float
+OES_vertex_array_object
+# # The following extensions are supported for the SGX 543 and 554 processors only:
+# EXT_color_buffer_half_float
+# EXT_occlusion_query_boolean
+# EXT_pvrtc_sRGB
+# EXT_shadow_samplers
+# EXT_sRGB
+# EXT_texture_rg
+# OES_texture_half_float_linear
