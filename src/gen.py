@@ -336,7 +336,10 @@ if __name__ == '__main__':
     if args.extensionsimportfile:
       extensionsToGenerate = []
       if args.extensionsimportfile:
-        extensionsToGenerate = [line.strip() for line in open(args.extensionsimportfile)]
+        def parse(str):
+          withoutComments = str.split('#')[0]
+          return withoutComments.strip()
+        extensionsToGenerate = [parse(line) for line in open(args.extensionsimportfile) if parse(str) != '']
 
       extensionsToGenerateSet = set(extensionsToGenerate)
       extensions = {e for e in registry.extensions if e.name in extensionsToGenerateSet}
