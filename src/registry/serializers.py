@@ -425,7 +425,7 @@ def writeCppExtCommandsCpp(apis, commands, fp, namespaces, headers, sysHeaders):
   commandContent = '\n'.join([compileCommand(c, c.extensions, False) for c in _sortCommandsByExtensions(commands)])
 
   baseCommandNames = {c.name for c in commands if c.name == c.basename}
-  commandsByBaseName = {c.basename: c for c in commands if c.name not in baseCommandNames}
+  commandsByBaseName = {c.basename: c for c in commands if c.basename not in baseCommandNames}
   commandsToAlias = commandsByBaseName.values()
 
   aliasContent = '\n'.join([compileCommand(c, c.extensions, True) for c in _sortCommandsByExtensions(commandsToAlias)])
